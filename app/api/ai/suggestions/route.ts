@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import OpenAI from "openai";
+import { AzureOpenAI } from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const client = new AzureOpenAI({
+  apiKey: process.env.AZURE_OPENAI_API_KEY,
+  endpoint: process.env.AZURE_OPENAI_ENDPOINT,
+  apiVersion: "2024-08-01-preview",
 });
 
 export async function POST(req: NextRequest) {
@@ -21,7 +23,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Content required" }, { status: 400 });
     }
 
-    if (!process.env.OPENAI_API_KEY) {
+    if (
+      !process.env.AZURE_OPENAI_API_KEY ||
+      !process.env.AZURE_OPENAI_ENDPOINT
+    ) {
       // Fallback to basic suggestions
       const suggestions: string[] = [];
 
@@ -69,8 +74,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ suggestions });
     }
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+    const completion = await client.chat.completions.create({
+      model: process.env.AZURE_OPENAI_DEPLOYMENT_NAME || "gpt-4o",
       messages: [
         {
           role: "system",
