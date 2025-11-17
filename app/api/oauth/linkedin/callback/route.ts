@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { cookies } from "next/headers";
 import { exchangeLinkedInCode } from "@/lib/platforms/linkedin";
-import { saveToken } from "@/lib/dynamodb";
+import { saveToken } from "@/lib/azure-storage";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.userId) {
-      return NextResponse.redirect(new URL("/auth/signin", req.url));
+    const cookieStore = await cookies();
+    const userId = cookieStore.get("userId")?.value;
+
+    if (!userId) {
+      return NextResponse.redirect(new URL("/", req.url));
     }
 
     const { searchParams } = new URL(req.url);
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
     const redirectUri = `${process.env.NEXTAUTH_URL}/api/oauth/linkedin/callback`;
     const tokenData = await exchangeLinkedInCode(code, redirectUri);
 
-    await saveToken(session.userId, "linkedin", {
+    await saveToken(userId, "linkedin", {
       accessToken: tokenData.access_token,
       refreshToken: tokenData.refresh_token,
       expiresAt: Date.now() + tokenData.expires_in * 1000,

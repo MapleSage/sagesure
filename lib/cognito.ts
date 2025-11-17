@@ -17,10 +17,9 @@ export function getLoginUrl() {
 }
 
 export function getLogoutUrl() {
-  const params = new URLSearchParams({
-    client_id: cognitoConfig.clientId,
-    logout_uri: cognitoConfig.logoutUri,
-  });
+  const params = new URLSearchParams();
+  params.append("client_id", cognitoConfig.clientId);
+  params.append("logout_uri", cognitoConfig.logoutUri || "");
   return `https://${cognitoConfig.domain}/logout?${params}`;
 }
 
