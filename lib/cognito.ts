@@ -2,24 +2,31 @@ export const cognitoConfig = {
   domain: "us-east-1bdqsu9gjr.auth.us-east-1.amazoncognito.com",
   clientId: "3537esq1en2a1118s8qi88qfvp",
   clientSecret: "1ra15otjjofs6j3oldgk0v46jf8idtr9cvvgktetcidv2t6mdhoh",
-  redirectUri: process.env.NEXTAUTH_URL + "/auth/callback",
-  logoutUri: process.env.NEXTAUTH_URL,
 };
 
+function getBaseUrl() {
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+  return process.env.NEXTAUTH_URL || "http://localhost:3000";
+}
+
 export function getLoginUrl() {
+  const redirectUri = `${getBaseUrl()}/auth/callback`;
   const params = new URLSearchParams({
     client_id: cognitoConfig.clientId,
     response_type: "code",
     scope: "openid email profile",
-    redirect_uri: cognitoConfig.redirectUri,
+    redirect_uri: redirectUri,
   });
   return `https://${cognitoConfig.domain}/oauth2/authorize?${params}`;
 }
 
 export function getLogoutUrl() {
+  const logoutUri = getBaseUrl();
   const params = new URLSearchParams();
   params.append("client_id", cognitoConfig.clientId);
-  params.append("logout_uri", cognitoConfig.logoutUri || "");
+  params.append("logout_uri", logoutUri);
   return `https://${cognitoConfig.domain}/logout?${params}`;
 }
 
