@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,23 +21,41 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Content required" }, { status: 400 });
     }
 
-    // Basic spell check and grammar fixes
-    let corrected = content
-      .replace(/\bi\b/g, "I")
-      .replace(/\bim\b/gi, "I'm")
-      .replace(/\bdont\b/gi, "don't")
-      .replace(/\bcant\b/gi, "can't")
-      .replace(/\bwont\b/gi, "won't")
-      .replace(/\byour\s+welcome\b/gi, "you're welcome")
-      .replace(/\bits\s+a\b/gi, "it's a")
-      .replace(/\btheir\s+is\b/gi, "there is")
-      .replace(/\s{2,}/g, " ")
-      .trim();
+    if (!process.env.OPENAI_API_KEY) {
+      // Fallback to basic spell check
+      let corrected = content
+        .replace(/\bi\b/g, "I")
+        .replace(/\bim\b/gi, "I'm")
+        .replace(/\bdont\b/gi, "don't")
+        .replace(/\bcant\b/gi, "can't")
+        .replace(/\bwont\b/gi, "won't")
+        .replace(/\byour\s+welcome\b/gi, "you're welcome")
+        .replace(/\bits\s+a\b/gi, "it's a")
+        .replace(/\btheir\s+is\b/gi, "there is")
+        .replace(/\s{2,}/g, " ")
+        .trim();
 
-    // Capitalize first letter of sentences
-    corrected = corrected.replace(/(^\w|[.!?]\s+\w)/g, (match) =>
-      match.toUpperCase()
-    );
+      corrected = corrected.replace(/(^\w|[.!?]\s+\w)/g, (match) =>
+        match.toUpperCase()
+      );
+      return NextResponse.json({ corrected });
+    }
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a professional editor. Fix spelling, grammar, and punctuation errors while preserving the original meaning and tone. Return ONLY the corrected text without any explanations or comments.",
+        },
+        { role: "user", content: content },
+      ],
+      temperature: 0.3,
+      max_tokens: 1000,
+    });
+
+    const corrected = completion.choices[0]?.message?.content || content;
 
     return NextResponse.json({ corrected });
   } catch (error: any) {

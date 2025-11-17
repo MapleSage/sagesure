@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,15 +21,42 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Prompt required" }, { status: 400 });
     }
 
-    // Call OpenAI or other AI service
-    // For now, return a template-based response
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: "OpenAI API key not configured" },
+        { status: 500 }
+      );
+    }
+
     const platformText =
       platforms?.length > 0 ? ` for ${platforms.join(", ")}` : "";
-    const content = `🚀 ${prompt}
 
-Here's an engaging post about this topic${platformText}. This content is optimized for social media engagement with relevant hashtags and a clear call-to-action.
+    const systemPrompt = `You are a professional social media content writer for SageSure, an AI-powered assistant for specialty insurance (Marine, Cyber, Renewable Energy, D&O). 
 
-#SocialMedia #ContentMarketing #DigitalMarketing`;
+Create engaging, professional social media posts that:
+- Start with a compelling hook or problem statement
+- Use storytelling and specific examples
+- Include relevant emojis (but not too many - 1-3 max)
+- Add 3-5 relevant hashtags at the end
+- Include a clear call-to-action when appropriate
+- Are optimized for ${platformText || "social media"}
+- Keep the tone professional but conversational
+- Focus on the insurance industry, technology, and innovation
+- Use bullet points with checkmarks (✓) when listing features or benefits
+
+The post should be between 150-300 words for optimal engagement.`;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.7,
+      max_tokens: 500,
+    });
+
+    const content = completion.choices[0]?.message?.content || "";
 
     return NextResponse.json({ content });
   } catch (error: any) {
