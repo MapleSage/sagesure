@@ -30,6 +30,12 @@ const tokensTable = new TableClient(
   credential
 );
 
+const blogsTable = new TableClient(
+  `https://${accountName}.table.core.windows.net`,
+  "blogs",
+  credential
+);
+
 // Initialize tables
 export async function initializeTables() {
   try {
@@ -39,6 +45,11 @@ export async function initializeTables() {
   }
   try {
     await tokensTable.createTable();
+  } catch (error: any) {
+    if (error.statusCode !== 409) throw error;
+  }
+  try {
+    await blogsTable.createTable();
   } catch (error: any) {
     if (error.statusCode !== 409) throw error;
   }
@@ -125,6 +136,95 @@ export async function getToken(userId: string, platform: string) {
 export async function deleteToken(userId: string, platform: string) {
   try {
     await tokensTable.deleteEntity(userId, platform);
+  } catch (error: any) {
+    if (error.statusCode !== 404) throw error;
+  }
+}
+
+// Blog operations
+export async function saveBlog(blog: {
+  userId: string;
+  title: string;
+  content: string;
+  excerpt?: string;
+  status: string;
+  tags?: string[];
+}) {
+  const blogId = Date.now().toString();
+  const entity = {
+    partitionKey: blog.userId,
+    rowKey: blogId,
+    title: blog.title,
+    content: blog.content,
+    excerpt: blog.excerpt || "",
+    status: blog.status,
+    tags: JSON.stringify(blog.tags || []),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  await blogsTable.createEntity(entity);
+  return { ...blog, id: blogId };
+}
+
+export async function getUserBlogs(userId: string) {
+  const blogs = [];
+  const entities = blogsTable.listEntities({
+    queryOptions: { filter: `PartitionKey eq '${userId}'` },
+  });
+
+  for await (const entity of entities) {
+    blogs.push({
+      id: entity.rowKey,
+      userId: entity.partitionKey,
+      title: entity.title,
+      content: entity.content,
+      excerpt: entity.excerpt,
+      status: entity.status,
+      tags: JSON.parse(entity.tags as string),
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+    });
+  }
+
+  return blogs.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
+
+export async function getBlog(userId: string, blogId: string) {
+  try {
+    const entity = await blogsTable.getEntity(userId, blogId);
+    return {
+      id: entity.rowKey,
+      userId: entity.partitionKey,
+      title: entity.title,
+      content: entity.content,
+      excerpt: entity.excerpt,
+      status: entity.status,
+      tags: JSON.parse(entity.tags as string),
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+    };
+  } catch (error: any) {
+    if (error.statusCode === 404) return null;
+    throw error;
+  }
+}
+
+export async function updateBlog(userId: string, blogId: string, updates: any) {
+  const entity = await blogsTable.getEntity(userId, blogId);
+  const updated = {
+    ...entity,
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+  await blogsTable.updateEntity(updated, "Replace");
+  return updated;
+}
+
+export async function deleteBlog(userId: string, blogId: string) {
+  try {
+    await blogsTable.deleteEntity(userId, blogId);
   } catch (error: any) {
     if (error.statusCode !== 404) throw error;
   }

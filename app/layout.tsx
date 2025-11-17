@@ -4,6 +4,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "SageSure Social - Social Media Management",
   description: "Manage all your social media accounts in one place",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
