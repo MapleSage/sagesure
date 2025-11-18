@@ -94,7 +94,10 @@ export default function Dashboard() {
 
   const togglePlatform = (platformId: string) => {
     if (!connectedPlatforms.includes(platformId)) {
-      window.location.href = `/api/oauth/${platformId}/authorize`;
+      // Instagram uses Facebook OAuth
+      const oauthPlatform =
+        platformId === "instagram" ? "facebook" : platformId;
+      window.location.href = `/api/oauth/${oauthPlatform}/authorize`;
       return;
     }
     setSelectedPlatforms((prev) =>
@@ -634,7 +637,11 @@ export default function Dashboard() {
                       <button
                         onClick={() => {
                           if (!isConnected) {
-                            window.location.href = `/api/oauth/${platform.id}/authorize`;
+                            const oauthPlatform =
+                              platform.id === "instagram"
+                                ? "facebook"
+                                : platform.id;
+                            window.location.href = `/api/oauth/${oauthPlatform}/authorize`;
                           }
                         }}
                         className={`px-4 py-2 rounded-lg ${

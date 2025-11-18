@@ -115,8 +115,15 @@ function convertMarkdownToHTML(markdown: string): string {
 
 export async function getHubSpotBlogPosts(limit = 10) {
   try {
-    const response = await hubspotClient.cms.blogs.blogPosts.getPage(limit);
-    return response.results;
+    // Use the correct API endpoint for blog posts
+    const response = await hubspotClient.apiRequest({
+      method: "GET",
+      path: `/cms/v3/blogs/posts`,
+      qs: {
+        limit: limit,
+      },
+    });
+    return response.results || [];
   } catch (error: any) {
     console.error("HubSpot fetch error:", error);
     throw new Error(error.message || "Failed to fetch HubSpot blogs");
