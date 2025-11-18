@@ -19,6 +19,7 @@ export function getLoginUrl() {
     scope: "openid email profile",
     redirect_uri: redirectUri,
   });
+  // Use /oauth2/authorize for OAuth flow (works with both Hosted UI and Managed Login)
   return `https://${cognitoConfig.domain}/oauth2/authorize?${params}`;
 }
 

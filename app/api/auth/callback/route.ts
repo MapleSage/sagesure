@@ -26,24 +26,19 @@ export async function POST(req: NextRequest) {
 
     // Set cookies
     const cookieStore = await cookies();
-    cookieStore.set("accessToken", tokens.access_token, {
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "lax" as const,
       maxAge: tokens.expires_in,
-    });
-    cookieStore.set("idToken", tokens.id_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: tokens.expires_in,
-    });
-    cookieStore.set("userId", user.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: tokens.expires_in,
-    });
+      path: "/", // Ensure cookie is available for all paths including OAuth callbacks
+    };
+
+    cookieStore.set("accessToken", tokens.access_token, cookieOptions);
+    cookieStore.set("idToken", tokens.id_token, cookieOptions);
+    cookieStore.set("userId", user.id, cookieOptions);
+
+    console.log("[Auth Callback] Cookies set for user:", user.id);
 
     return NextResponse.json({ success: true, user });
   } catch (error: any) {

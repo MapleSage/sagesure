@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { getUserTokens } from "@/lib/dynamodb";
+import { getUserTokens } from "@/lib/azure-storage";
 
 export async function GET(req: NextRequest) {
   try {

@@ -133,6 +133,24 @@ export async function getToken(userId: string, platform: string) {
   }
 }
 
+export async function getUserTokens(userId: string) {
+  const tokens = [];
+  const entities = tokensTable.listEntities({
+    queryOptions: { filter: `PartitionKey eq '${userId}'` },
+  });
+
+  for await (const entity of entities) {
+    tokens.push({
+      platform: entity.rowKey as string,
+      accessToken: entity.accessToken as string,
+      refreshToken: entity.refreshToken as string,
+      expiresAt: entity.expiresAt as number,
+    });
+  }
+
+  return tokens;
+}
+
 export async function deleteToken(userId: string, platform: string) {
   try {
     await tokensTable.deleteEntity(userId, platform);
