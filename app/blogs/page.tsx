@@ -82,11 +82,14 @@ export default function BlogsPage() {
     }
   };
 
-  const handleSaveBlog = async (status: string) => {
+  const handleSaveBlog = async (status: string, publishToHubSpot = false) => {
     if (!title || !content) return;
     setSaving(true);
     try {
-      const response = await fetch("/api/blogs/create", {
+      const endpoint = publishToHubSpot
+        ? "/api/blogs/publish-hubspot"
+        : "/api/blogs/create";
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -102,18 +105,25 @@ export default function BlogsPage() {
       });
       const data = await response.json();
       if (data.success) {
-        alert(
-          `Blog ${status === "published" ? "published" : "saved as draft"}!`
-        );
+        if (publishToHubSpot && data.hubspot?.url) {
+          alert(`Blog published to HubSpot!\n\nView at: ${data.hubspot.url}`);
+        } else {
+          alert(
+            `Blog ${status === "published" ? "published" : "saved as draft"}!`
+          );
+        }
         setTitle("");
         setContent("");
         setExcerpt("");
         setTags("");
         setView("list");
         fetchBlogs();
+      } else {
+        alert(`Error: ${data.error || "Failed to save blog"}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Save blog error:", error);
+      alert(`Error: ${error.message || "Failed to save blog"}`);
     } finally {
       setSaving(false);
     }
@@ -341,24 +351,34 @@ export default function BlogsPage() {
                   />
                 </div>
 
-                <div className="flex gap-3">
+                <div className="space-y-3">
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => handleSaveBlog("draft")}
+                      disabled={saving || !title || !content}
+                      className="flex-1 bg-gray-500 text-white py-3 px-6 rounded-lg hover:bg-gray-600 disabled:bg-gray-300 flex items-center justify-center gap-2">
+                      <FaSave /> Save Draft
+                    </button>
+                    <button
+                      onClick={() => handleSaveBlog("published")}
+                      disabled={saving || !title || !content}
+                      className="flex-1 bg-orange-500 text-white py-3 px-6 rounded-lg hover:bg-orange-600 disabled:bg-gray-300">
+                      {saving ? "Publishing..." : "Publish Locally"}
+                    </button>
+                    <button
+                      onClick={() => setView("preview")}
+                      disabled={!content}
+                      className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2">
+                      <FaEye /> Preview
+                    </button>
+                  </div>
                   <button
-                    onClick={() => handleSaveBlog("draft")}
+                    onClick={() => handleSaveBlog("published", true)}
                     disabled={saving || !title || !content}
-                    className="flex-1 bg-gray-500 text-white py-3 px-6 rounded-lg hover:bg-gray-600 disabled:bg-gray-300 flex items-center justify-center gap-2">
-                    <FaSave /> Save Draft
-                  </button>
-                  <button
-                    onClick={() => handleSaveBlog("published")}
-                    disabled={saving || !title || !content}
-                    className="flex-1 bg-orange-500 text-white py-3 px-6 rounded-lg hover:bg-orange-600 disabled:bg-gray-300">
-                    {saving ? "Publishing..." : "Publish"}
-                  </button>
-                  <button
-                    onClick={() => setView("preview")}
-                    disabled={!content}
-                    className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2">
-                    <FaEye /> Preview
+                    className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-6 rounded-lg hover:from-orange-600 hover:to-red-600 disabled:bg-gray-300 font-semibold">
+                    {saving
+                      ? "Publishing to HubSpot..."
+                      : "🚀 Publish to HubSpot (SEO-Optimized)"}
                   </button>
                 </div>
               </div>
