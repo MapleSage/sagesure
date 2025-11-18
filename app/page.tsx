@@ -29,9 +29,9 @@ export default function Home() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-800">
       <div className="text-center text-white">
         <img
-          src="/logo.svg"
+          src="/logo.png"
           alt="SageSure"
-          className="h-16 w-16 mx-auto mb-4"
+          className="h-20 w-20 mx-auto mb-4"
         />
         <h1 className="text-4xl font-bold mb-4">SageSure Social</h1>
         <p className="text-xl">Redirecting to login...</p>

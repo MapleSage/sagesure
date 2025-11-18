@@ -23,6 +23,9 @@ export default function BlogsPage() {
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [socialPosts, setSocialPosts] = useState<string[]>([]);
   const [generatingSocial, setGeneratingSocial] = useState(false);
+  const [showHubSpotBlogs, setShowHubSpotBlogs] = useState(false);
+  const [hubspotBlogs, setHubspotBlogs] = useState<any[]>([]);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -49,6 +52,18 @@ export default function BlogsPage() {
       .then((res) => res.json())
       .then((data) => setBlogs(data.blogs || []))
       .catch(console.error);
+  };
+
+  const syncHubSpotBlogs = () => {
+    setSyncing(true);
+    fetch("/api/blogs/sync-hubspot")
+      .then((res) => res.json())
+      .then((data) => {
+        setHubspotBlogs(data.blogs || []);
+        setShowHubSpotBlogs(true);
+      })
+      .catch(console.error)
+      .finally(() => setSyncing(false));
   };
 
   const handleGenerateBlog = async () => {
@@ -169,7 +184,7 @@ export default function BlogsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <img src="/logo.svg" alt="SageSure" className="h-8 w-8" />
+              <img src="/logo.png" alt="SageSure" className="h-10 w-10" />
               <h1 className="text-2xl font-bold text-gray-900">
                 SageSure Blogs
               </h1>
@@ -195,7 +210,30 @@ export default function BlogsPage() {
         {view === "list" && (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">Your Blog Posts</h2>
+              <div>
+                <h2 className="text-2xl font-bold mb-2">Your Blog Posts</h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowHubSpotBlogs(false)}
+                    className={`px-4 py-2 rounded-lg text-sm ${
+                      !showHubSpotBlogs
+                        ? "bg-orange-500 text-white"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}>
+                    Local Drafts
+                  </button>
+                  <button
+                    onClick={syncHubSpotBlogs}
+                    disabled={syncing}
+                    className={`px-4 py-2 rounded-lg text-sm ${
+                      showHubSpotBlogs
+                        ? "bg-orange-500 text-white"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}>
+                    {syncing ? "Syncing..." : "HubSpot Blogs"}
+                  </button>
+                </div>
+              </div>
               <button
                 onClick={() => setView("create")}
                 className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 flex items-center gap-2">
@@ -203,7 +241,7 @@ export default function BlogsPage() {
               </button>
             </div>
 
-            {blogs.length === 0 ? (
+            {!showHubSpotBlogs && blogs.length === 0 ? (
               <div className="bg-white rounded-lg shadow p-12 text-center">
                 <p className="text-gray-500 mb-4">
                   No blog posts yet. Create your first one!
@@ -214,16 +252,31 @@ export default function BlogsPage() {
                   Create Blog Post
                 </button>
               </div>
+            ) : showHubSpotBlogs && hubspotBlogs.length === 0 ? (
+              <div className="bg-white rounded-lg shadow p-12 text-center">
+                <p className="text-gray-500 mb-4">No HubSpot blogs found.</p>
+              </div>
             ) : (
               <div className="grid gap-6">
-                {blogs.map((blog) => (
+                {(showHubSpotBlogs ? hubspotBlogs : blogs).map((blog) => (
                   <div
                     key={blog.id}
                     className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
                     <div className="flex justify-between items-start mb-3">
-                      <h3 className="text-xl font-bold text-gray-900">
-                        {blog.title}
-                      </h3>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-gray-900 mb-1">
+                          {blog.title}
+                        </h3>
+                        {blog.hubspotUrl && (
+                          <a
+                            href={blog.hubspotUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:underline">
+                            View on HubSpot →
+                          </a>
+                        )}
+                      </div>
                       <span
                         className={`text-xs px-3 py-1 rounded ${
                           blog.status === "published"
@@ -244,8 +297,48 @@ export default function BlogsPage() {
                           </span>
                         ))}
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {new Date(blog.createdAt).toLocaleDateString()}
+                      <div className="flex items-center gap-3">
+                        {showHubSpotBlogs && (
+                          <button
+                            onClick={async () => {
+                              setContent(blog.content);
+                              setGeneratingSocial(true);
+                              try {
+                                const response = await fetch(
+                                  "/api/ai/blog-to-social",
+                                  {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({
+                                      blogContent: blog.content,
+                                      count: 5,
+                                    }),
+                                  }
+                                );
+                                const data = await response.json();
+                                if (data.posts) {
+                                  alert(
+                                    `Generated ${data.posts.length} social posts! Check the dashboard to schedule them.`
+                                  );
+                                }
+                              } catch (error) {
+                                console.error(error);
+                              } finally {
+                                setGeneratingSocial(false);
+                              }
+                            }}
+                            disabled={generatingSocial}
+                            className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:bg-gray-300">
+                            {generatingSocial
+                              ? "Generating..."
+                              : "Generate Social Posts"}
+                          </button>
+                        )}
+                        <div className="text-sm text-gray-500">
+                          {new Date(blog.createdAt).toLocaleDateString()}
+                        </div>
                       </div>
                     </div>
                   </div>
