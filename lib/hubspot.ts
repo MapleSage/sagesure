@@ -12,7 +12,6 @@ export async function publishBlogToHubSpot(blog: {
   authorName?: string;
 }) {
   try {
-    // Convert markdown to HTML (basic conversion)
     const htmlContent = convertMarkdownToHTML(blog.content);
 
     const blogPost = {
@@ -22,10 +21,14 @@ export async function publishBlogToHubSpot(blog: {
       contentGroupId: process.env.HUBSPOT_BLOG_ID,
       state: "PUBLISHED",
       publishDate: new Date().toISOString(),
-      tagIds: [], // You can map tags to HubSpot tag IDs if needed
+      tagIds: [],
     };
 
-    const response = await hubspotClient.cms.blogs.blogPosts.create(blogPost);
+    const response: any = await hubspotClient.apiRequest({
+      method: "POST",
+      path: "/cms/v3/blogs/posts",
+      body: blogPost,
+    });
 
     return {
       success: true,
@@ -55,7 +58,11 @@ export async function saveDraftToHubSpot(blog: {
       state: "DRAFT",
     };
 
-    const response = await hubspotClient.cms.blogs.blogPosts.create(blogPost);
+    const response: any = await hubspotClient.apiRequest({
+      method: "POST",
+      path: "/cms/v3/blogs/posts",
+      body: blogPost,
+    });
 
     return {
       success: true,
@@ -68,7 +75,6 @@ export async function saveDraftToHubSpot(blog: {
   }
 }
 
-// Basic markdown to HTML conversion
 function convertMarkdownToHTML(markdown: string): string {
   let html = markdown;
 
@@ -91,7 +97,8 @@ function convertMarkdownToHTML(markdown: string): string {
   // Lists
   html = html.replace(/^\* (.*$)/gim, "<li>$1</li>");
   html = html.replace(/^- (.*$)/gim, "<li>$1</li>");
-  html = html.replace(/(<li>.*<\/li>)/s, "<ul>$1</ul>");
+  // Wrap consecutive list items in ul tags
+  html = html.replace(/(<li>[\s\S]*?<\/li>)/g, "<ul>$1</ul>");
 
   // Numbered lists
   html = html.replace(/^\d+\. (.*$)/gim, "<li>$1</li>");
@@ -115,8 +122,7 @@ function convertMarkdownToHTML(markdown: string): string {
 
 export async function getHubSpotBlogPosts(limit = 10) {
   try {
-    // Use the correct API endpoint for blog posts
-    const response = await hubspotClient.apiRequest({
+    const response: any = await hubspotClient.apiRequest({
       method: "GET",
       path: `/cms/v3/blogs/posts`,
       qs: {

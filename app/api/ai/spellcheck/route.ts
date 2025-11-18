@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
         .replace(/\s{2,}/g, " ")
         .trim();
 
-      corrected = corrected.replace(/(^\w|[.!?]\s+\w)/g, (match) =>
+      corrected = corrected.replace(/(^\w|[.!?]\s+\w)/g, (match: string) =>
         match.toUpperCase()
       );
       return NextResponse.json({ corrected });
