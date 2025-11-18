@@ -1,0 +1,5 @@
+{
+    "type": "oauth-callback",
+    "version": "1.0",
+    "redirectUrl": "https://sagesure-social-app.azurewebsites.net/api/oauth/hubspot/callback"
+}

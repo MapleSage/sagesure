@@ -29,7 +29,7 @@ export default function Home() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-800">
       <div className="text-center text-white">
         <img
-          src="/logo.png"
+          src="/logo_netural.png"
           alt="SageSure"
           className="h-20 w-20 mx-auto mb-4"
         />

@@ -1,0 +1,31 @@
+{
+    "name": "SageSure Social",
+    "description": "AI-powered social media management integrated with HubSpot CMS. Generate social posts from blogs, schedule across platforms, and leverage GPT-4o for content creation.",
+    "version": "1.0.0",
+    "scopes": [
+        "content",
+        "oauth"
+    ],
+    "redirectUrls": [
+        "http://localhost:3000/api/oauth/hubspot/callback",
+        "https://sagesure-social-app.azurewebsites.net/api/oauth/hubspot/callback"
+    ],
+    "public": {
+        "name": "SageSure Social",
+        "description": "AI-powered social media management for HubSpot",
+        "category": "marketing",
+        "screenshots": [],
+        "videoUrl": "",
+        "supportEmail": "support@sagesure.io",
+        "privacyPolicyUrl": "https://sagesure.io/privacy",
+        "termsOfServiceUrl": "https://sagesure.io/terms"
+    },
+    "features": [
+        "AI Content Generation with GPT-4o",
+        "Multi-platform posting (LinkedIn, Facebook, Instagram, Twitter/X)",
+        "Blog-to-Social converter",
+        "HubSpot CMS integration",
+        "Post scheduling",
+        "AI spell check and suggestions"
+    ]
+}

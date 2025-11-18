@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     const origin =
       req.headers.get("origin") ||
       process.env.NEXTAUTH_URL ||
-      "http://localhost:3000";
+      "https://social.sagesure.io";
     const redirectUri = `${origin}/auth/callback`;
 
     const tokens = await exchangeCodeForTokens(code, redirectUri);
