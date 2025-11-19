@@ -115,6 +115,10 @@ export async function getFacebookAuthUrl(redirectUri: string) {
   return `https://www.facebook.com/v18.0/dialog/oauth?${params}`;
 }
 
+export function getDefaultRedirectUri() {
+  return `${process.env.NEXTAUTH_URL}/oauth/facebook/callback`;
+}
+
 export async function exchangeFacebookCode(code: string, redirectUri: string) {
   const response = await axios.get(
     "https://graph.facebook.com/v18.0/oauth/access_token",

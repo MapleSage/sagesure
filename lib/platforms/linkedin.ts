@@ -97,9 +97,13 @@ export async function getLinkedInAuthUrl(redirectUri: string) {
     response_type: "code",
     client_id: process.env.LINKEDIN_CLIENT_ID!,
     redirect_uri: redirectUri,
-    scope: "r_liteprofile w_member_social",
+    scope: "openid profile email w_member_social",
   });
   return `https://www.linkedin.com/oauth/v2/authorization?${params}`;
+}
+
+export function getDefaultRedirectUri() {
+  return `${process.env.NEXTAUTH_URL}/oauth/linkedin/callback`;
 }
 
 export async function exchangeLinkedInCode(code: string, redirectUri: string) {

@@ -97,7 +97,7 @@ export default function Dashboard() {
       // Instagram uses Facebook OAuth
       const oauthPlatform =
         platformId === "instagram" ? "facebook" : platformId;
-      window.location.href = `/api/oauth/${oauthPlatform}/authorize`;
+      window.location.href = `/oauth/${oauthPlatform}/authorize`;
       return;
     }
     setSelectedPlatforms((prev) =>
@@ -641,7 +641,7 @@ export default function Dashboard() {
                               platform.id === "instagram"
                                 ? "facebook"
                                 : platform.id;
-                            window.location.href = `/api/oauth/${oauthPlatform}/authorize`;
+                            window.location.href = `/oauth/${oauthPlatform}/authorize`;
                           }
                         }}
                         className={`px-4 py-2 rounded-lg ${

@@ -84,6 +84,10 @@ export async function getTwitterAuthUrl(
   return `https://twitter.com/i/oauth2/authorize?${params}`;
 }
 
+export function getDefaultRedirectUri() {
+  return `${process.env.NEXTAUTH_URL}/oauth/twitter/callback`;
+}
+
 export async function exchangeTwitterCode(
   code: string,
   redirectUri: string,
