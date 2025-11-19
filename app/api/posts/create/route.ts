@@ -81,9 +81,14 @@ export async function POST(req: NextRequest) {
     }
 
     for (const platform of platforms) {
+      console.log(
+        `[POST] Attempting to post to ${platform} for user ${userId}`
+      );
+
       const tokenData = await getToken(userId, platform);
 
       if (!tokenData?.accessToken) {
+        console.log(`[POST] No token found for ${platform}`);
         results.push({
           platform,
           success: false,
@@ -92,50 +97,63 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
+      console.log(`[POST] Token found for ${platform}, posting...`);
+
       // Use platform-specific content if available, otherwise use default
       const platformText = platformContent?.[platform] || content;
       const platformMedia = mediaUrls?.[platform] || imageUrl;
 
       let result;
-      switch (platform) {
-        case "linkedin":
-          result = await postToLinkedIn(
-            tokenData.accessToken,
-            platformText,
-            platformMedia
-          );
-          break;
-        case "facebook":
-          result = await postToFacebook(
-            tokenData.accessToken,
-            platformText,
-            platformMedia
-          );
-          break;
-        case "instagram":
-          if (!platformMedia) {
-            result = {
-              success: false,
-              error: "Instagram requires an image",
-              platform: "instagram",
-            };
-          } else {
-            result = await postToInstagram(
+      try {
+        switch (platform) {
+          case "linkedin":
+            result = await postToLinkedIn(
               tokenData.accessToken,
               platformText,
               platformMedia
             );
-          }
-          break;
-        case "twitter":
-          result = await postToTwitter(
-            tokenData.accessToken,
-            platformText,
-            platformMedia
-          );
-          break;
-        default:
-          result = { success: false, error: "Unknown platform", platform };
+            break;
+          case "facebook":
+            result = await postToFacebook(
+              tokenData.accessToken,
+              platformText,
+              platformMedia
+            );
+            break;
+          case "instagram":
+            if (!platformMedia) {
+              result = {
+                success: false,
+                error: "Instagram requires an image",
+                platform: "instagram",
+              };
+            } else {
+              result = await postToInstagram(
+                tokenData.accessToken,
+                platformText,
+                platformMedia
+              );
+            }
+            break;
+          case "twitter":
+            result = await postToTwitter(
+              tokenData.accessToken,
+              platformText,
+              platformMedia
+            );
+            break;
+          default:
+            result = { success: false, error: "Unknown platform", platform };
+        }
+
+        console.log(`[POST] Result for ${platform}:`, result);
+      } catch (error: any) {
+        console.error(`[POST] Error posting to ${platform}:`, error);
+        result = {
+          success: false,
+          error: error.message,
+          platform,
+        };
       }
 
       results.push(result);
@@ -151,10 +169,30 @@ export async function POST(req: NextRequest) {
       mediaUrls,
     });
 
+    // Check if any posts succeeded
+    const successCount = results.filter((r) => r.success).length;
+    const failedPlatforms = results.filter((r) => !r.success);
+
+    console.log(
+      `[POST] Posted to ${successCount}/${platforms.length} platforms`
+    );
+    if (failedPlatforms.length > 0) {
+      console.log("[POST] Failed platforms:", failedPlatforms);
+    }
+
     return NextResponse.json({
       success: true,
       postId: post.id,
       results,
+      summary: {
+        total: platforms.length,
+        succeeded: successCount,
+        failed: failedPlatforms.length,
+        failedPlatforms: failedPlatforms.map((p) => ({
+          platform: p.platform,
+          error: p.error,
+        })),
+      },
     });
   } catch (error: any) {
     console.error("Post creation error:", error);

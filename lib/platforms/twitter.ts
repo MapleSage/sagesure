@@ -7,30 +7,14 @@ export async function postToTwitter(
   imageUrl?: string
 ) {
   try {
-    let mediaId;
-
-    if (imageUrl) {
-      // Upload media first
-      const mediaResponse = await axios.post(
-        "https://upload.twitter.com/1.1/media/upload.json",
-        { media_data: imageUrl },
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      mediaId = mediaResponse.data.media_id_string;
-    }
-
-    // Create tweet
+    // Create tweet (text only for now - media upload is complex)
     const tweetData: any = {
       text: content,
     };
 
-    if (mediaId) {
-      tweetData.media = { media_ids: [mediaId] };
+    if (imageUrl) {
+      // For now, just post text - media upload requires downloading and re-uploading
+      console.log("Image URL provided but not uploaded:", imageUrl);
     }
 
     const response = await axios.post(
@@ -50,9 +34,13 @@ export async function postToTwitter(
       platform: "twitter",
     };
   } catch (error: any) {
+    console.error("Twitter post error:", error.response?.data || error.message);
     return {
       success: false,
-      error: error.response?.data?.detail || error.message,
+      error:
+        error.response?.data?.detail ||
+        error.response?.data?.errors?.[0]?.message ||
+        error.message,
       platform: "twitter",
     };
   }

@@ -303,9 +303,28 @@ export default function Dashboard() {
       });
       const data = await response.json();
       if (data.success) {
-        alert(
-          isScheduled ? "Post scheduled successfully!" : "Posted successfully!"
-        );
+        // Show detailed results
+        if (data.summary) {
+          const { succeeded, failed, failedPlatforms } = data.summary;
+          let message = isScheduled
+            ? "Post scheduled successfully!"
+            : `Posted to ${succeeded} platform(s) successfully!`;
+
+          if (failed > 0) {
+            message += `\n\nFailed to post to ${failed} platform(s):`;
+            failedPlatforms.forEach((p: any) => {
+              message += `\n- ${p.platform}: ${p.error}`;
+            });
+          }
+          alert(message);
+        } else {
+          alert(
+            isScheduled
+              ? "Post scheduled successfully!"
+              : "Posted successfully!"
+          );
+        }
+
         setContent("");
         setImageUrl("");
         setSelectedPlatforms([]);
