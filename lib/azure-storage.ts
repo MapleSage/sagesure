@@ -36,6 +36,18 @@ const blogsTable = new TableClient(
   credential
 );
 
+const eventsTable = new TableClient(
+  `https://${accountName}.table.core.windows.net`,
+  "events",
+  credential
+);
+
+const settingsTable = new TableClient(
+  `https://${accountName}.table.core.windows.net`,
+  "settings",
+  credential
+);
+
 // Initialize tables
 export async function initializeTables() {
   try {
@@ -50,6 +62,16 @@ export async function initializeTables() {
   }
   try {
     await blogsTable.createTable();
+  } catch (error: any) {
+    if (error.statusCode !== 409) throw error;
+  }
+  try {
+    await eventsTable.createTable();
+  } catch (error: any) {
+    if (error.statusCode !== 409) throw error;
+  }
+  try {
+    await settingsTable.createTable();
   } catch (error: any) {
     if (error.statusCode !== 409) throw error;
   }
@@ -263,6 +285,112 @@ export async function updateBlog(userId: string, blogId: string, updates: any) {
 export async function deleteBlog(userId: string, blogId: string) {
   try {
     await blogsTable.deleteEntity(userId, blogId);
+  } catch (error: any) {
+    if (error.statusCode !== 404) throw error;
+  }
+}
+
+// Settings operations
+export async function saveSettings(
+  userId: string,
+  settings: {
+    companyName?: string;
+    brandIdentity?: string;
+    customerProfile?: string;
+  }
+) {
+  const entity = {
+    partitionKey: userId,
+    rowKey: "settings",
+    companyName: settings.companyName || "",
+    brandIdentity: settings.brandIdentity || "",
+    customerProfile: settings.customerProfile || "",
+    updatedAt: new Date().toISOString(),
+  };
+  await settingsTable.upsertEntity(entity);
+  return settings;
+}
+
+export async function getSettings(userId: string) {
+  try {
+    const entity = await settingsTable.getEntity(userId, "settings");
+    return {
+      companyName: entity.companyName as string,
+      brandIdentity: entity.brandIdentity as string,
+      customerProfile: entity.customerProfile as string,
+    };
+  } catch (error: any) {
+    if (error.statusCode === 404) return null;
+    throw error;
+  }
+}
+
+// Calendar Events operations
+export async function saveEvent(event: {
+  userId: string;
+  title: string;
+  date: string;
+  description?: string;
+  category?: string;
+}) {
+  const eventId = Date.now().toString();
+  const entity = {
+    partitionKey: event.userId,
+    rowKey: eventId,
+    title: event.title,
+    date: event.date,
+    description: event.description || "",
+    category: event.category || "",
+    createdAt: new Date().toISOString(),
+  };
+  await eventsTable.createEntity(entity);
+  return { ...event, id: eventId };
+}
+
+export async function getUserEvents(
+  userId: string,
+  startDate?: string,
+  endDate?: string
+) {
+  const events = [];
+  const entities = eventsTable.listEntities({
+    queryOptions: { filter: `PartitionKey eq '${userId}'` },
+  });
+
+  for await (const entity of entities) {
+    const event = {
+      id: entity.rowKey,
+      userId: entity.partitionKey,
+      title: entity.title,
+      date: entity.date,
+      description: entity.description,
+      category: entity.category,
+      createdAt: entity.createdAt,
+    };
+
+    // Filter by date range if provided
+    if (startDate && endDate) {
+      const eventDate = new Date(entity.date as string);
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      if (eventDate >= start && eventDate <= end) {
+        events.push(event);
+      }
+    } else {
+      events.push(event);
+    }
+  }
+
+  return events.sort(
+    (a, b) =>
+      new Date(a.date as string).getTime() -
+      new Date(b.date as string).getTime()
+  );
+}
+
+export async function deleteEvent(userId: string, eventId: string) {
+  try {
+    await eventsTable.deleteEntity(userId, eventId);
   } catch (error: any) {
     if (error.statusCode !== 404) throw error;
   }

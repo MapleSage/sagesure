@@ -396,6 +396,11 @@ export default function Dashboard() {
               <FaBlog /> Blogs
             </button>
             <button
+              onClick={() => router.push("/calendar")}
+              className="pb-4 px-2 border-b-2 border-transparent font-medium text-sm flex items-center gap-2 text-gray-500 hover:text-gray-700">
+              <FaHistory /> Calendar Events
+            </button>
+            <button
               onClick={() => setActiveTab("settings")}
               className={`pb-4 px-2 border-b-2 font-medium text-sm flex items-center gap-2 ${
                 activeTab === "settings"
