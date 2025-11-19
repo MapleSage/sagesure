@@ -92,12 +92,22 @@ export async function POST(req: NextRequest) {
         results.push({
           platform,
           success: false,
-          error: "Platform not connected",
+          error: "Platform not connected. Please reconnect your account.",
         });
         continue;
       }
 
-      console.log(`[POST] Token found for ${platform}, posting...`);
+      console.log(`[POST] Token found for ${platform}`);
+      console.log(
+        `[POST] Token preview: ${tokenData.accessToken.substring(0, 20)}...`
+      );
+      console.log(
+        `[POST] Token expires at: ${
+          tokenData.expiresAt
+            ? new Date(tokenData.expiresAt * 1000).toISOString()
+            : "N/A"
+        }`
+      );
 
       // Use platform-specific content if available, otherwise use default
       const platformText = platformContent?.[platform] || content;

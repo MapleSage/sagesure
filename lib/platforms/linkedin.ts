@@ -43,7 +43,7 @@ export async function postToLinkedIn(
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
           "X-Restli-Protocol-Version": "2.0.0",
-          "LinkedIn-Version": "202401",
+          "LinkedIn-Version": "202405",
         },
       }
     );
@@ -58,9 +58,29 @@ export async function postToLinkedIn(
       "LinkedIn post error:",
       error.response?.data || error.message
     );
+
+    let errorMessage = error.message;
+    if (error.response?.data) {
+      const data = error.response.data;
+      errorMessage =
+        data.message ||
+        data.error_description ||
+        data.error ||
+        JSON.stringify(data);
+    }
+
+    // Check for specific errors
+    if (errorMessage.includes("version") || errorMessage.includes("20240101")) {
+      errorMessage =
+        "LinkedIn API version error. Please reconnect your LinkedIn account.";
+    } else if (error.response?.status === 401) {
+      errorMessage =
+        "LinkedIn token expired. Please reconnect your LinkedIn account.";
+    }
+
     return {
       success: false,
-      error: error.response?.data?.message || error.message,
+      error: errorMessage,
       platform: "linkedin",
     };
   }

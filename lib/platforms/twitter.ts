@@ -35,12 +35,29 @@ export async function postToTwitter(
     };
   } catch (error: any) {
     console.error("Twitter post error:", error.response?.data || error.message);
+
+    let errorMessage = error.message;
+    if (error.response?.data) {
+      const data = error.response.data;
+      errorMessage =
+        data.detail ||
+        data.errors?.[0]?.message ||
+        data.title ||
+        JSON.stringify(data);
+    }
+
+    // Check for specific errors
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      errorMessage =
+        "Twitter/X token expired or invalid. Please reconnect your X account.";
+    } else if (errorMessage.includes("Unauthorized")) {
+      errorMessage =
+        "Twitter/X authorization failed. Please reconnect your X account.";
+    }
+
     return {
       success: false,
-      error:
-        error.response?.data?.detail ||
-        error.response?.data?.errors?.[0]?.message ||
-        error.message,
+      error: errorMessage,
       platform: "twitter",
     };
   }

@@ -206,23 +206,67 @@ export default function Dashboard() {
     }
   };
 
+  const getPlatformCharLimit = (platform: string) => {
+    switch (platform) {
+      case "twitter":
+        return 280;
+      case "linkedin":
+        return 3000;
+      case "facebook":
+        return 63206;
+      case "instagram":
+        return 2200;
+      default:
+        return 3000;
+    }
+  };
+
   const validateBeforePublish = () => {
     if (!content && useSameContent) {
       alert("Please enter content");
       return false;
     }
-    if (selectedPlatforms.includes("instagram") && !imageUrl) {
-      alert("Instagram requires an image");
-      return false;
-    }
-    if (!useSameContent) {
+
+    // Check character limits for each platform
+    if (useSameContent) {
       for (const platform of selectedPlatforms) {
-        if (!platformContent[platform]) {
+        const limit = getPlatformCharLimit(platform);
+        if (content.length > limit) {
+          alert(
+            `Content too long for ${platform.toUpperCase()}!\n\n` +
+              `Current: ${content.length} characters\n` +
+              `Limit: ${limit} characters\n` +
+              `Over by: ${content.length - limit} characters\n\n` +
+              `Please shorten your content or use platform-specific content.`
+          );
+          return false;
+        }
+      }
+    } else {
+      for (const platform of selectedPlatforms) {
+        const platformText = platformContent[platform] || "";
+        if (!platformText) {
           alert(`Please enter content for ${platform}`);
+          return false;
+        }
+        const limit = getPlatformCharLimit(platform);
+        if (platformText.length > limit) {
+          alert(
+            `Content too long for ${platform.toUpperCase()}!\n\n` +
+              `Current: ${platformText.length} characters\n` +
+              `Limit: ${limit} characters\n` +
+              `Over by: ${platformText.length - limit} characters`
+          );
           return false;
         }
       }
     }
+
+    if (selectedPlatforms.includes("instagram") && !imageUrl) {
+      alert("Instagram requires an image");
+      return false;
+    }
+
     return true;
   };
 
@@ -568,32 +612,63 @@ export default function Dashboard() {
                         onChange={(e) => setContent(e.target.value)}
                         placeholder="Write your post..."
                         className="w-full h-40 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                        maxLength={3000}
+                        maxLength={63206}
                       />
-                      <div className="flex justify-between items-center mt-2">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={handleSpellCheck}
-                            disabled={!content.trim()}
-                            className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 disabled:text-gray-400">
-                            <FaSpellCheck /> Spell Check
-                          </button>
-                          <button
-                            onClick={handleGetSuggestions}
-                            disabled={!content.trim()}
-                            className="text-sm text-green-600 hover:text-green-700 flex items-center gap-1 disabled:text-gray-400">
-                            <FaLightbulb /> Get Suggestions
-                          </button>
+                      <div className="mt-2">
+                        <div className="flex justify-between items-center mb-2">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={handleSpellCheck}
+                              disabled={!content.trim()}
+                              className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 disabled:text-gray-400">
+                              <FaSpellCheck /> Spell Check
+                            </button>
+                            <button
+                              onClick={handleGetSuggestions}
+                              disabled={!content.trim()}
+                              className="text-sm text-green-600 hover:text-green-700 flex items-center gap-1 disabled:text-gray-400">
+                              <FaLightbulb /> Get Suggestions
+                            </button>
+                          </div>
                         </div>
-                        <div className="text-sm text-gray-500">
-                          {content.length} / 3000
-                        </div>
+                        {/* Character limits for selected platforms */}
+                        {selectedPlatforms.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {selectedPlatforms.map((platform) => {
+                              const limit = getPlatformCharLimit(platform);
+                              const isOver = content.length > limit;
+                              const isNear =
+                                content.length > limit * 0.9 && !isOver;
+                              return (
+                                <div
+                                  key={platform}
+                                  className={`text-xs px-2 py-1 rounded ${
+                                    isOver
+                                      ? "bg-red-100 text-red-800 font-semibold"
+                                      : isNear
+                                      ? "bg-yellow-100 text-yellow-800"
+                                      : "bg-gray-100 text-gray-600"
+                                  }`}>
+                                  {platform === "twitter" ? "X" : platform}:{" "}
+                                  {content.length}/{limit}
+                                  {isOver &&
+                                    ` (${content.length - limit} over)`}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </>
                   ) : (
                     <div className="space-y-4">
                       {selectedPlatforms.map((platform) => {
-                        const maxLength = platform === "twitter" ? 280 : 3000;
+                        const maxLength = getPlatformCharLimit(platform);
+                        const currentLength = (platformContent[platform] || "")
+                          .length;
+                        const isOver = currentLength > maxLength;
+                        const isNear =
+                          currentLength > maxLength * 0.9 && !isOver;
                         return (
                           <div key={platform}>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -605,6 +680,11 @@ export default function Dashboard() {
                                   (Image required)
                                 </span>
                               )}
+                              {platform === "twitter" && (
+                                <span className="text-orange-600 ml-1 text-xs">
+                                  (280 char limit)
+                                </span>
+                              )}
                             </label>
                             <textarea
                               value={platformContent[platform] || ""}
@@ -614,12 +694,28 @@ export default function Dashboard() {
                                   [platform]: e.target.value,
                                 })
                               }
-                              className="w-full h-24 p-3 border border-gray-300 rounded-lg"
+                              className={`w-full h-24 p-3 border rounded-lg ${
+                                isOver
+                                  ? "border-red-500 bg-red-50"
+                                  : isNear
+                                  ? "border-yellow-500 bg-yellow-50"
+                                  : "border-gray-300"
+                              }`}
                               maxLength={maxLength}
                             />
-                            <div className="text-xs text-gray-500 mt-1">
-                              {(platformContent[platform] || "").length} /{" "}
-                              {maxLength}
+                            <div
+                              className={`text-xs mt-1 ${
+                                isOver
+                                  ? "text-red-600 font-semibold"
+                                  : isNear
+                                  ? "text-yellow-600"
+                                  : "text-gray-500"
+                              }`}>
+                              {currentLength} / {maxLength}
+                              {isOver &&
+                                ` - ${
+                                  currentLength - maxLength
+                                } characters over limit!`}
                             </div>
                           </div>
                         );
