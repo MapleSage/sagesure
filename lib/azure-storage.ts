@@ -62,6 +62,9 @@ export async function savePost(post: {
   platforms: string[];
   scheduledFor?: string;
   status: string;
+  platformContent?: Record<string, string>; // Platform-specific content
+  imageUrl?: string;
+  mediaUrls?: Record<string, string>; // Platform-specific media
 }) {
   const postId = Date.now().toString();
   const entity = {
@@ -69,12 +72,27 @@ export async function savePost(post: {
     rowKey: postId,
     content: post.content,
     platforms: JSON.stringify(post.platforms),
+    platformContent: JSON.stringify(post.platformContent || {}),
     scheduledFor: post.scheduledFor || "",
     status: post.status,
+    imageUrl: post.imageUrl || "",
+    mediaUrls: JSON.stringify(post.mediaUrls || {}),
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
   await postsTable.createEntity(entity);
   return { ...post, id: postId };
+}
+
+export async function updatePost(userId: string, postId: string, updates: any) {
+  const entity = await postsTable.getEntity(userId, postId);
+  const updated = {
+    ...entity,
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+  await postsTable.updateEntity(updated, "Replace");
+  return updated;
 }
 
 export async function getUserPosts(userId: string) {
