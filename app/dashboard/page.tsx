@@ -53,9 +53,21 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (user) {
+      // Check if we just connected a platform
+      const params = new URLSearchParams(window.location.search);
+      const connected = params.get("connected");
+
       fetch("/api/platforms/connected")
         .then((res) => res.json())
-        .then((data) => setConnectedPlatforms(data.platforms || []))
+        .then((data) => {
+          setConnectedPlatforms(data.platforms || []);
+          // Show success message if we just connected
+          if (connected) {
+            alert(`Successfully connected: ${connected}`);
+            // Clean up URL
+            window.history.replaceState({}, "", "/dashboard");
+          }
+        })
         .catch(console.error);
 
       fetch("/api/posts/list")
