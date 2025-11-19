@@ -20,9 +20,7 @@ function initializeBlobService() {
 export async function ensureContainerExists() {
   const { containerClient } = initializeBlobService();
   try {
-    await containerClient.createIfNotExists({
-      access: "private",
-    });
+    await containerClient.createIfNotExists();
   } catch (error) {
     console.error("Error creating container:", error);
     throw error;
