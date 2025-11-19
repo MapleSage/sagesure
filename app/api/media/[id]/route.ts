@@ -84,7 +84,7 @@ export async function DELETE(
 
     if (media) {
       // Delete from blob storage
-      await deleteFile(media.url);
+      await deleteFile(media.url as string);
 
       // Delete from database
       await deleteMedia(userId, id);
