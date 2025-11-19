@@ -10,6 +10,12 @@ import {
   FaCheck,
   FaSpinner,
 } from "react-icons/fa";
+import dynamic from "next/dynamic";
+
+const GoogleDrivePicker = dynamic(() => import("./GoogleDrivePicker"), {
+  ssr: false,
+});
+const CanvaButton = dynamic(() => import("./CanvaButton"), { ssr: false });
 
 interface Media {
   id: string;
@@ -47,6 +53,8 @@ export default function MediaLibraryModal({
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showUploadMenu, setShowUploadMenu] = useState(false);
+  const [showGoogleDrive, setShowGoogleDrive] = useState(false);
+  const [showCanva, setShowCanva] = useState(false);
 
   // Load media library
   const loadMedia = useCallback(async () => {

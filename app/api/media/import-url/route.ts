@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import {
-  uploadFile,
-  ensureContainerExists,
-  downloadFromUrl,
-} from "@/lib/azure-blob";
+import { put } from "@vercel/blob";
 import { saveMedia } from "@/lib/azure-storage";
 
 export async function POST(req: NextRequest) {
@@ -22,17 +18,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "URL required" }, { status: 400 });
     }
 
-    // Ensure blob container exists
-    await ensureContainerExists();
+    console.log("[Import URL] Downloading from:", url);
 
     // Download file from URL
-    const buffer = await downloadFromUrl(url);
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to download file: ${response.statusText}`);
+    }
 
-    // Detect content type from URL or buffer
+    const blob = await response.blob();
     const filename = url.split("/").pop() || "imported-file";
     const extension = filename.split(".").pop()?.toLowerCase();
 
-    let contentType = "application/octet-stream";
+    let contentType = blob.type || "application/octet-stream";
     let type: "image" | "video" = "image";
 
     if (["jpg", "jpeg", "png", "gif", "webp"].includes(extension || "")) {
@@ -43,22 +41,36 @@ export async function POST(req: NextRequest) {
       type = "video";
     }
 
-    // Upload to Azure Blob Storage
-    const blobUrl = await uploadFile(userId, buffer, filename, contentType);
+    console.log("[Import URL] Uploading to Vercel Blob...");
+
+    // Upload to Vercel Blob
+    const uploadedBlob = await put(
+      `${userId}/${Date.now()}-${filename}`,
+      blob,
+      {
+        access: "public",
+        addRandomSuffix: false,
+      }
+    );
+
+    console.log("[Import URL] Upload successful! URL:", uploadedBlob.url);
 
     // Save metadata to database
     const media = await saveMedia({
       userId,
-      url: blobUrl,
+      url: uploadedBlob.url,
+      thumbnail: uploadedBlob.url,
       filename,
       type,
       mimeType: contentType,
-      size: buffer.length,
+      size: blob.size,
       folder,
       description,
       tags,
       source: "url",
     });
+
+    console.log("[Import URL] Metadata saved to database");
 
     return NextResponse.json({
       success: true,

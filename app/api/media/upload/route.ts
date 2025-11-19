@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { uploadFile, ensureContainerExists } from "@/lib/azure-blob";
+import { put } from "@vercel/blob";
 import { saveMedia } from "@/lib/azure-storage";
 
 export async function POST(req: NextRequest) {
@@ -12,9 +12,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Ensure blob container exists
-    await ensureContainerExists();
-
     const formData = await req.formData();
     const file = formData.get("file") as File;
     const folder = formData.get("folder") as string | null;
@@ -24,6 +21,8 @@ export async function POST(req: NextRequest) {
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
+
+    console.log("[Upload] File received:", file.name, file.type, file.size);
 
     // Validate file type
     const allowedTypes = [
@@ -63,12 +62,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Convert file to buffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    // Upload to Vercel Blob
+    console.log("[Upload] Uploading to Vercel Blob...");
+    const blob = await put(`${userId}/${Date.now()}-${file.name}`, file, {
+      access: "public",
+      addRandomSuffix: false,
+    });
 
-    // Upload to Azure Blob Storage
-    const url = await uploadFile(userId, buffer, file.name, file.type);
+    console.log("[Upload] Upload successful! URL:", blob.url);
 
     // Determine media type
     const type = file.type.startsWith("video/") ? "video" : "image";
@@ -76,7 +77,8 @@ export async function POST(req: NextRequest) {
     // Save metadata to database
     const media = await saveMedia({
       userId,
-      url,
+      url: blob.url,
+      thumbnail: blob.url, // For images, use same URL. For videos, would need thumbnail generation
       filename: file.name,
       type,
       mimeType: file.type,
@@ -86,6 +88,8 @@ export async function POST(req: NextRequest) {
       tags: tags ? JSON.parse(tags) : undefined,
       source: "upload",
     });
+
+    console.log("[Upload] Metadata saved to database");
 
     return NextResponse.json({
       success: true,
