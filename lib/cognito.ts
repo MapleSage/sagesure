@@ -25,10 +25,11 @@ export function getLoginUrl() {
 
 export function getLogoutUrl() {
   const logoutUri = getBaseUrl();
-  const params = new URLSearchParams();
-  params.append("client_id", cognitoConfig.clientId);
-  params.append("logout_uri", logoutUri);
-  return `https://${cognitoConfig.domain}/logout?${params}`;
+  const params = new URLSearchParams({
+    client_id: cognitoConfig.clientId,
+    logout_uri: logoutUri,
+  });
+  return `https://${cognitoConfig.domain}/logout?${params.toString()}`;
 }
 
 export async function exchangeCodeForTokens(code: string, redirectUri: string) {
