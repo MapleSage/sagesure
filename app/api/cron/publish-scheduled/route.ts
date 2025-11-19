@@ -145,6 +145,8 @@ export async function GET(req: NextRequest) {
 
         // Update post status
         const updated = {
+          partitionKey: entity.partitionKey as string,
+          rowKey: entity.rowKey as string,
           ...entity,
           status: "published",
           publishedAt: new Date().toISOString(),
