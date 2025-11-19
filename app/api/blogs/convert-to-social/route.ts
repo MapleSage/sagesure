@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     const prompt = `You are a social media expert. Convert this blog post into engaging social media posts for different platforms.
 
 Blog Title: ${blog.title}
-Blog Content: ${blog.content.substring(0, 1000)}...
+Blog Content: ${String(blog.content).substring(0, 1000)}...
 
 Create social media posts for these platforms: ${platforms.join(", ")}
 
