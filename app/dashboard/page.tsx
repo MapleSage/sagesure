@@ -14,7 +14,10 @@ import {
   FaSpellCheck,
   FaLightbulb,
   FaBlog,
+  FaImage,
+  FaTimes,
 } from "react-icons/fa";
+import MediaLibraryModal from "../components/MediaLibraryModal";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -44,6 +47,8 @@ export default function Dashboard() {
   const [showImageGenerator, setShowImageGenerator] = useState(false);
   const [imagePrompt, setImagePrompt] = useState("");
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [showMediaLibrary, setShowMediaLibrary] = useState(false);
+  const [selectedMediaFiles, setSelectedMediaFiles] = useState<any[]>([]);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -615,27 +620,58 @@ export default function Dashboard() {
 
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Add media (optional)
+                    Add media
                     {selectedPlatforms.includes("instagram") && (
                       <span className="text-red-500 ml-1">
                         * Required for Instagram
                       </span>
                     )}
                   </label>
+
+                  {/* Selected Media Preview */}
+                  {selectedMediaFiles.length > 0 && (
+                    <div className="mb-4 grid grid-cols-4 gap-3">
+                      {selectedMediaFiles.map((media) => (
+                        <div
+                          key={media.id}
+                          className="relative aspect-square rounded-lg overflow-hidden border-2 border-gray-200">
+                          <img
+                            src={media.thumbnail}
+                            alt={media.filename}
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            onClick={() =>
+                              setSelectedMediaFiles((prev) =>
+                                prev.filter((m) => m.id !== media.id)
+                              )
+                            }
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600">
+                            <FaTimes className="text-xs" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Media Selection Buttons */}
                   <div className="flex gap-2">
-                    <input
-                      type="url"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      placeholder="https://example.com/image.jpg"
-                      className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                    <button
+                      onClick={() => setShowMediaLibrary(true)}
+                      className="flex-1 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-teal-500 hover:bg-teal-50 flex items-center justify-center gap-2 text-gray-600 hover:text-teal-600 transition-all">
+                      <FaImage /> Select from Library
+                    </button>
                     <button
                       onClick={() => setShowImageGenerator(true)}
-                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2">
-                      <FaMagic /> AI Generate
+                      className="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2">
+                      <FaMagic /> Generate with AI
                     </button>
                   </div>
+
+                  <p className="text-xs text-gray-500 mt-2">
+                    Select an image or video, or drag and drop files straight
+                    from your desktop
+                  </p>
                 </div>
 
                 <div className="mb-6">
@@ -948,6 +984,20 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Media Library Modal */}
+      <MediaLibraryModal
+        isOpen={showMediaLibrary}
+        onClose={() => setShowMediaLibrary(false)}
+        onSelect={(media) => {
+          setSelectedMediaFiles(media);
+          if (media.length > 0) {
+            setImageUrl(media[0].url);
+          }
+        }}
+        maxSelection={20}
+        allowedTypes={["image", "video"]}
+      />
     </div>
   );
 }
