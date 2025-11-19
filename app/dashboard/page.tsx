@@ -268,7 +268,7 @@ export default function Dashboard() {
       const data = await response.json();
       if (data.success) {
         alert(
-          `Enhanced prompt: ${data.enhancedPrompt}\n\nUse this with DALL-E or Midjourney to generate your image`
+          `Gemini Enhanced Prompt:\n\n${data.enhancedPrompt}\n\nCopy this prompt and use it with your preferred image generation tool.`
         );
         setImagePrompt("");
         setShowImageGenerator(false);
@@ -485,18 +485,24 @@ export default function Dashboard() {
                     </div>
                   )}
 
-                  <div className="mb-4">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={useSameContent}
-                        onChange={(e) => setUseSameContent(e.target.checked)}
-                      />
-                      <span className="text-sm">
-                        Use same content for all platforms
-                      </span>
-                    </label>
-                  </div>
+                  {selectedPlatforms.length > 1 && (
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={useSameContent}
+                          onChange={(e) => setUseSameContent(e.target.checked)}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm font-medium text-blue-900">
+                          Use same content for all platforms
+                        </span>
+                      </label>
+                      <p className="text-xs text-blue-700 mt-1 ml-6">
+                        Uncheck to customize content for each platform
+                      </p>
+                    </div>
+                  )}
 
                   {useSameContent ? (
                     <>
@@ -890,11 +896,11 @@ export default function Dashboard() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-semibold mb-4">
-              Generate Image with AI
+              Generate Image with Gemini AI
             </h3>
             <p className="text-sm text-gray-600 mb-4">
-              Describe the image you want and we'll create an enhanced prompt
-              for DALL-E or Midjourney
+              Describe the image you want and Gemini will create an enhanced
+              prompt
             </p>
             <textarea
               value={imagePrompt}

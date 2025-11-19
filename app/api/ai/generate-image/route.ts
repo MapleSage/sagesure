@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       success: true,
       enhancedPrompt,
       originalPrompt: prompt,
-      note: "Use this enhanced prompt with DALL-E, Midjourney, or Stable Diffusion",
+      poweredBy: "Google Gemini AI",
     });
   } catch (error: any) {
     console.error("Image prompt generation error:", error);
