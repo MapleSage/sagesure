@@ -92,11 +92,38 @@ export default function MediaLibraryModal({
         const data = await response.json();
         if (data.success) {
           setMedia((prev) => [data.media, ...prev]);
+        } else {
+          alert(`Failed to upload ${file.name}: ${data.error}`);
         }
       }
     } catch (error) {
       console.error("Upload failed:", error);
       alert("Failed to upload files");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Handle import from URL
+  const handleImportFromUrl = async (url: string) => {
+    setUploading(true);
+    try {
+      const response = await fetch("/api/media/import-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setMedia((prev) => [data.media, ...prev]);
+        alert("Image imported successfully!");
+      } else {
+        alert(`Failed to import: ${data.error}`);
+      }
+    } catch (error) {
+      console.error("Import failed:", error);
+      alert("Failed to import from URL");
     } finally {
       setUploading(false);
     }
@@ -271,7 +298,7 @@ export default function MediaLibraryModal({
               </button>
 
               {showUploadMenu && (
-                <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg py-2 w-64">
+                <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg py-2 w-64 z-10">
                   <label className="block px-4 py-2 hover:bg-gray-100 cursor-pointer">
                     <input
                       type="file"
@@ -279,24 +306,72 @@ export default function MediaLibraryModal({
                       accept={allowedTypes
                         .map((t) => (t === "image" ? "image/*" : "video/*"))
                         .join(",")}
-                      onChange={(e) =>
-                        e.target.files && handleFileUpload(e.target.files)
-                      }
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          handleFileUpload(e.target.files);
+                          setShowUploadMenu(false);
+                        }
+                      }}
                       className="hidden"
                     />
                     📁 Upload from computer
                   </label>
-                  <button className="w-full text-left px-4 py-2 hover:bg-gray-100">
+                  <button
+                    onClick={() => {
+                      const url = prompt("Enter image URL:");
+                      if (url) {
+                        handleImportFromUrl(url);
+                        setShowUploadMenu(false);
+                      }
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100">
                     🔗 Import from URL
                   </button>
-                  <button className="w-full text-left px-4 py-2 hover:bg-gray-100">
-                    ☁️ Import from Google Drive
+                  <button
+                    onClick={() => {
+                      alert(
+                        "Google Drive integration coming soon! For now, please use 'Upload from computer' or 'Import from URL'."
+                      );
+                      setShowUploadMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-400">
+                    ☁️ Import from Google Drive (Coming soon)
                   </button>
-                  <button className="w-full text-left px-4 py-2 hover:bg-gray-100">
-                    📦 Import from Dropbox
+                  <button
+                    onClick={() => {
+                      alert(
+                        "Dropbox integration coming soon! For now, please use 'Upload from computer' or 'Import from URL'."
+                      );
+                      setShowUploadMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-400">
+                    📦 Import from Dropbox (Coming soon)
                   </button>
-                  <button className="w-full text-left px-4 py-2 hover:bg-gray-100">
-                    📊 Import from OneDrive
+                  <button
+                    onClick={() => {
+                      alert(
+                        "OneDrive integration coming soon! For now, please use 'Upload from computer' or 'Import from URL'."
+                      );
+                      setShowUploadMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-400">
+                    📊 Import from OneDrive (Coming soon)
+                  </button>
+                  <button
+                    onClick={() => {
+                      alert("Canva integration coming soon!");
+                      setShowUploadMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-400">
+                    🎨 Import from Canva (Coming soon)
+                  </button>
+                  <button
+                    onClick={() => {
+                      alert("Adobe Express integration coming soon!");
+                      setShowUploadMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-400">
+                    🎨 Import from Adobe Express (Coming soon)
                   </button>
                 </div>
               )}
