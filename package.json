@@ -12,6 +12,7 @@
     "@aws-sdk/client-dynamodb": "^3.932.0",
     "@aws-sdk/lib-dynamodb": "^3.932.0",
     "@azure/data-tables": "^13.3.2",
+    "@azure/storage-blob": "^12.29.1",
     "@google/generative-ai": "^0.24.1",
     "@hubspot/api-client": "^13.4.0",
     "@types/uuid": "^11.0.0",

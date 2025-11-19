@@ -48,6 +48,12 @@ const settingsTable = new TableClient(
   credential
 );
 
+const mediaTable = new TableClient(
+  `https://${accountName}.table.core.windows.net`,
+  "media",
+  credential
+);
+
 // Initialize tables
 export async function initializeTables() {
   try {
@@ -72,6 +78,11 @@ export async function initializeTables() {
   }
   try {
     await settingsTable.createTable();
+  } catch (error: any) {
+    if (error.statusCode !== 409) throw error;
+  }
+  try {
+    await mediaTable.createTable();
   } catch (error: any) {
     if (error.statusCode !== 409) throw error;
   }
@@ -394,4 +405,213 @@ export async function deleteEvent(userId: string, eventId: string) {
   } catch (error: any) {
     if (error.statusCode !== 404) throw error;
   }
+}
+
+// Media operations
+export async function saveMedia(media: {
+  userId: string;
+  url: string;
+  thumbnail?: string;
+  filename: string;
+  type: "image" | "video";
+  mimeType: string;
+  size: number;
+  width?: number;
+  height?: number;
+  folder?: string;
+  tags?: string[];
+  description?: string;
+  source: "upload" | "url" | "google-drive" | "dropbox" | "onedrive" | "ai";
+}) {
+  const mediaId = Date.now().toString();
+  const entity = {
+    partitionKey: media.userId,
+    rowKey: mediaId,
+    url: media.url,
+    thumbnail: media.thumbnail || media.url,
+    filename: media.filename,
+    type: media.type,
+    mimeType: media.mimeType,
+    size: media.size,
+    width: media.width || 0,
+    height: media.height || 0,
+    folder: media.folder || "",
+    tags: JSON.stringify(media.tags || []),
+    description: media.description || "",
+    source: media.source,
+    usedInPosts: JSON.stringify([]),
+    clicks: 0,
+    views: 0,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  await mediaTable.createEntity(entity);
+  return { ...media, id: mediaId };
+}
+
+export async function getUserMedia(
+  userId: string,
+  type?: "image" | "video",
+  folder?: string,
+  limit?: number
+) {
+  const media = [];
+  let filter = `PartitionKey eq '${userId}'`;
+
+  if (type) {
+    filter += ` and type eq '${type}'`;
+  }
+  if (folder) {
+    filter += ` and folder eq '${folder}'`;
+  }
+
+  const entities = mediaTable.listEntities({
+    queryOptions: { filter },
+  });
+
+  let count = 0;
+  for await (const entity of entities) {
+    if (limit && count >= limit) break;
+
+    media.push({
+      id: entity.rowKey,
+      userId: entity.partitionKey,
+      url: entity.url,
+      thumbnail: entity.thumbnail,
+      filename: entity.filename,
+      type: entity.type,
+      mimeType: entity.mimeType,
+      size: entity.size,
+      width: entity.width,
+      height: entity.height,
+      folder: entity.folder,
+      tags: JSON.parse(entity.tags as string),
+      description: entity.description,
+      source: entity.source,
+      usedInPosts: JSON.parse(entity.usedInPosts as string),
+      clicks: entity.clicks,
+      views: entity.views,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+    });
+    count++;
+  }
+
+  return media.sort(
+    (a, b) =>
+      new Date(b.createdAt as string).getTime() -
+      new Date(a.createdAt as string).getTime()
+  );
+}
+
+export async function getMedia(userId: string, mediaId: string) {
+  try {
+    const entity = await mediaTable.getEntity(userId, mediaId);
+    return {
+      id: entity.rowKey,
+      userId: entity.partitionKey,
+      url: entity.url,
+      thumbnail: entity.thumbnail,
+      filename: entity.filename,
+      type: entity.type,
+      mimeType: entity.mimeType,
+      size: entity.size,
+      width: entity.width,
+      height: entity.height,
+      folder: entity.folder,
+      tags: JSON.parse(entity.tags as string),
+      description: entity.description,
+      source: entity.source,
+      usedInPosts: JSON.parse(entity.usedInPosts as string),
+      clicks: entity.clicks,
+      views: entity.views,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+    };
+  } catch (error: any) {
+    if (error.statusCode === 404) return null;
+    throw error;
+  }
+}
+
+export async function updateMedia(
+  userId: string,
+  mediaId: string,
+  updates: any
+) {
+  const entity = await mediaTable.getEntity(userId, mediaId);
+  const updated = {
+    ...entity,
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+  await mediaTable.updateEntity(updated, "Replace");
+  return updated;
+}
+
+export async function deleteMedia(userId: string, mediaId: string) {
+  try {
+    await mediaTable.deleteEntity(userId, mediaId);
+  } catch (error: any) {
+    if (error.statusCode !== 404) throw error;
+  }
+}
+
+export async function searchMedia(userId: string, query: string) {
+  const media = [];
+  const entities = mediaTable.listEntities({
+    queryOptions: { filter: `PartitionKey eq '${userId}'` },
+  });
+
+  const lowerQuery = query.toLowerCase();
+
+  for await (const entity of entities) {
+    const filename = (entity.filename as string).toLowerCase();
+    const description = ((entity.description as string) || "").toLowerCase();
+    const tags = JSON.parse(entity.tags as string);
+    const tagsStr = tags.join(" ").toLowerCase();
+
+    if (
+      filename.includes(lowerQuery) ||
+      description.includes(lowerQuery) ||
+      tagsStr.includes(lowerQuery)
+    ) {
+      media.push({
+        id: entity.rowKey,
+        userId: entity.partitionKey,
+        url: entity.url,
+        thumbnail: entity.thumbnail,
+        filename: entity.filename,
+        type: entity.type,
+        mimeType: entity.mimeType,
+        size: entity.size,
+        width: entity.width,
+        height: entity.height,
+        folder: entity.folder,
+        tags,
+        description: entity.description,
+        source: entity.source,
+        createdAt: entity.createdAt,
+      });
+    }
+  }
+
+  return media;
+}
+
+export async function getUserFolders(userId: string) {
+  const folders = new Map<string, number>();
+  const entities = mediaTable.listEntities({
+    queryOptions: { filter: `PartitionKey eq '${userId}'` },
+  });
+
+  for await (const entity of entities) {
+    const folder = (entity.folder as string) || "Uncategorized";
+    folders.set(folder, (folders.get(folder) || 0) + 1);
+  }
+
+  return Array.from(folders.entries()).map(([name, count]) => ({
+    name,
+    count,
+  }));
 }
