@@ -75,38 +75,55 @@ export async function POST(req: NextRequest) {
     const type = file.type.startsWith("video/") ? "video" : "image";
 
     // Save metadata to database
-    const media = await saveMedia({
-      userId,
-      url: blob.url,
-      thumbnail: blob.url, // For images, use same URL. For videos, would need thumbnail generation
-      filename: file.name,
-      type,
-      mimeType: file.type,
-      size: file.size,
-      folder: folder || undefined,
-      description: description || undefined,
-      tags: tags ? JSON.parse(tags) : undefined,
-      source: "upload",
-    });
+    console.log("[Upload] Saving metadata to database...");
+    try {
+      const media = await saveMedia({
+        userId,
+        url: blob.url,
+        thumbnail: blob.url, // For images, use same URL. For videos, would need thumbnail generation
+        filename: file.name,
+        type,
+        mimeType: file.type,
+        size: file.size,
+        folder: folder || undefined,
+        description: description || undefined,
+        tags: tags ? JSON.parse(tags) : undefined,
+        source: "upload",
+      });
 
-    console.log("[Upload] Metadata saved to database");
+      console.log("[Upload] Metadata saved to database successfully");
 
-    return NextResponse.json({
-      success: true,
-      media: {
-        id: media.id,
-        url: media.url,
-        thumbnail: media.thumbnail,
-        filename: media.filename,
-        type: media.type,
-        size: media.size,
-        width: media.width,
-        height: media.height,
-        createdAt: new Date().toISOString(),
-      },
-    });
+      return NextResponse.json({
+        success: true,
+        media: {
+          id: media.id,
+          url: media.url,
+          thumbnail: media.thumbnail,
+          filename: media.filename,
+          type: media.type,
+          size: media.size,
+          width: media.width,
+          height: media.height,
+          createdAt: new Date().toISOString(),
+        },
+      });
+    } catch (dbError: any) {
+      console.error("[Upload] Database error:", dbError);
+      console.error(
+        "[Upload] Error details:",
+        JSON.stringify(dbError, null, 2)
+      );
+      return NextResponse.json(
+        {
+          error: "Failed to save media metadata to database",
+          details: dbError.message || dbError.toString(),
+          code: dbError.code || dbError.statusCode,
+        },
+        { status: 500 }
+      );
+    }
   } catch (error: any) {
-    console.error("Media upload error:", error);
+    console.error("[Upload] General upload error:", error);
     return NextResponse.json(
       { error: error.message || "Failed to upload media" },
       { status: 500 }

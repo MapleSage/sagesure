@@ -85,10 +85,18 @@ export default function MediaLibraryModal({
 
   // Handle file upload
   const handleFileUpload = async (files: FileList) => {
+    console.log("[MediaLibrary] Starting upload of", files.length, "files");
     setUploading(true);
     try {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
+        console.log(
+          "[MediaLibrary] Uploading file:",
+          file.name,
+          file.type,
+          file.size
+        );
+
         const formData = new FormData();
         formData.append("file", file);
 
@@ -97,7 +105,9 @@ export default function MediaLibraryModal({
           body: formData,
         });
 
+        console.log("[MediaLibrary] Upload response status:", response.status);
         const data = await response.json();
+        console.log("[MediaLibrary] Upload response data:", data);
         if (data.success) {
           setMedia((prev) => [data.media, ...prev]);
         } else {

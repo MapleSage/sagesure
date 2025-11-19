@@ -423,6 +423,20 @@ export async function saveMedia(media: {
   description?: string;
   source: "upload" | "url" | "google-drive" | "dropbox" | "onedrive" | "ai";
 }) {
+  // Ensure media table exists - try to create it first
+  console.log("[saveMedia] Ensuring media table exists...");
+  try {
+    await mediaTable.createTable();
+    console.log("[saveMedia] Media table created successfully");
+  } catch (error: any) {
+    if (error.statusCode === 409) {
+      console.log("[saveMedia] Media table already exists");
+    } else {
+      console.error("[saveMedia] Error creating media table:", error);
+      throw error;
+    }
+  }
+
   const mediaId = Date.now().toString();
   const entity = {
     partitionKey: media.userId,
@@ -445,7 +459,16 @@ export async function saveMedia(media: {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
-  await mediaTable.createEntity(entity);
+
+  console.log("[saveMedia] Creating entity in media table...");
+  try {
+    await mediaTable.createEntity(entity);
+    console.log("[saveMedia] Entity created successfully");
+  } catch (error: any) {
+    console.error("[saveMedia] Error creating entity:", error);
+    throw error;
+  }
+
   return { ...media, id: mediaId };
 }
 
