@@ -18,6 +18,7 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import MediaLibraryModal from "../components/MediaLibraryModal";
+import BlogSelector from "../components/BlogSelector";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -49,6 +50,8 @@ export default function Dashboard() {
   const [generatingImage, setGeneratingImage] = useState(false);
   const [showMediaLibrary, setShowMediaLibrary] = useState(false);
   const [selectedMediaFiles, setSelectedMediaFiles] = useState<any[]>([]);
+  const [showBlogSelector, setShowBlogSelector] = useState(false);
+  const [linkedBlogUrl, setLinkedBlogUrl] = useState("");
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -290,11 +293,29 @@ export default function Dashboard() {
     if (!content || selectedPlatforms.length === 0) return;
     setPosting(true);
     try {
+      // Append blog URL to content if present
+      const finalPlatformContent: Record<string, string> = {};
+      if (!useSameContent && linkedBlogUrl) {
+        selectedPlatforms.forEach((platform) => {
+          const postContent = platformContent[platform] || "";
+          finalPlatformContent[platform] = postContent.includes(linkedBlogUrl)
+            ? postContent
+            : `${postContent}\n\n${linkedBlogUrl}`;
+        });
+      } else {
+        Object.assign(finalPlatformContent, platformContent);
+      }
+
+      const finalContent =
+        linkedBlogUrl && useSameContent && !content.includes(linkedBlogUrl)
+          ? `${content}\n\n${linkedBlogUrl}`
+          : content;
+
       const payload: any = {
-        content,
+        content: finalContent,
         platforms: selectedPlatforms,
         imageUrl: imageUrl || undefined,
-        platformContent: useSameContent ? {} : platformContent,
+        platformContent: useSameContent ? {} : finalPlatformContent,
       };
       if (isScheduled && scheduledDate && scheduledTime) {
         payload.scheduledFor = new Date(
@@ -440,9 +461,16 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
               <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold mb-4">
-                  Create new social post
-                </h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold">
+                    Create new social post
+                  </h2>
+                  <button
+                    onClick={() => setShowBlogSelector(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm">
+                    <FaBlog /> Convert from Blog
+                  </button>
+                </div>
 
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -997,6 +1025,39 @@ export default function Dashboard() {
         }}
         maxSelection={20}
         allowedTypes={["image", "video"]}
+      />
+
+      {/* Blog Selector Modal */}
+      <BlogSelector
+        isOpen={showBlogSelector}
+        onClose={() => setShowBlogSelector(false)}
+        onSelect={(blog, posts, blogUrl) => {
+          // Set platform-specific content
+          const platformContentObj: Record<string, string> = {};
+          selectedPlatforms.forEach((platform) => {
+            if (posts[platform]) {
+              platformContentObj[platform] = posts[platform];
+            }
+          });
+
+          setPlatformContent(platformContentObj);
+          setUseSameContent(false);
+          setLinkedBlogUrl(blogUrl);
+
+          // Set default content if no platforms selected
+          if (selectedPlatforms.length === 0) {
+            setContent(
+              `${
+                blog.excerpt || blog.content.substring(0, 200)
+              }...\n\nRead the full story →`
+            );
+          }
+
+          alert(
+            `Blog converted! Platform-specific posts have been generated.\n\nBlog URL: ${blogUrl}\n\nYou can now edit the posts and publish.`
+          );
+        }}
+        selectedPlatforms={selectedPlatforms}
       />
     </div>
   );
