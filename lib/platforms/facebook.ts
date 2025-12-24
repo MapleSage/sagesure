@@ -173,8 +173,13 @@ export async function getFacebookAuthUrl(redirectUri: string) {
   return `https://www.facebook.com/v18.0/dialog/oauth?${params}`;
 }
 
+export function getFacebookRedirectUri(baseUrl?: string) {
+  const base = (baseUrl || process.env.NEXTAUTH_URL || "").replace(/\/+$/, "");
+  return `${base}/oauth/facebook/callback`;
+}
+
 export function getDefaultRedirectUri() {
-  return `${process.env.NEXTAUTH_URL}/oauth/facebook/callback`;
+  return getFacebookRedirectUri();
 }
 
 export async function exchangeFacebookCode(code: string, redirectUri: string) {
@@ -192,6 +197,7 @@ export async function exchangeFacebookCode(code: string, redirectUri: string) {
           client_secret: process.env.META_CLIENT_SECRET,
           redirect_uri: redirectUri,
           code,
+          grant_type: "authorization_code",
         },
       }
     );

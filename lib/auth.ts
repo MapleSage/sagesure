@@ -1,5 +1,5 @@
-// No authentication - use default demo user ID for all operations
-export const DEFAULT_USER_ID = "demo-user";
+// No authentication - use default user ID for all operations
+export const DEFAULT_USER_ID = "info@sagesure.io";
 
 /**
  * Gets the user ID for API operations

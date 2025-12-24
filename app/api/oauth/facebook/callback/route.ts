@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserId } from "@/lib/auth";
-import { exchangeFacebookCode } from "@/lib/platforms/facebook";
+import { exchangeFacebookCode, getDefaultRedirectUri } from "@/lib/platforms/facebook";
 import { saveToken } from "@/lib/azure-storage";
 
 export async function GET(req: NextRequest) {
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const redirectUri = `${process.env.NEXTAUTH_URL}/api/oauth/facebook/callback`;
+    const redirectUri = getDefaultRedirectUri();
     console.log(
       "[Facebook Callback] Exchanging code with redirectUri:",
       redirectUri
@@ -69,12 +69,11 @@ export async function GET(req: NextRequest) {
     );
   } catch (error: any) {
     console.error("[Facebook OAuth error]", error);
+    const details = error.response?.data?.error?.message || error.message || "unknown";
     console.error("[Facebook OAuth error details]", error.response?.data);
     return NextResponse.redirect(
       new URL(
-        `/dashboard?error=facebook_auth_failed&details=${encodeURIComponent(
-          error.message || "unknown"
-        )}`,
+        `/dashboard?error=facebook_auth_failed&details=${encodeURIComponent(details)}`,
         process.env.NEXTAUTH_URL || req.url
       )
     );

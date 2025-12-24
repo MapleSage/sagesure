@@ -55,7 +55,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     // No auth required - set default user
-    setUser({ email: "demo@sagesure.io" });
+    setUser({ email: "info@sagesure.io" });
     setLoading(false);
   }, []);
 
@@ -221,10 +221,10 @@ export default function Dashboard() {
         if (content.length > limit) {
           alert(
             `Content too long for ${platform.toUpperCase()}!\n\n` +
-              `Current: ${content.length} characters\n` +
-              `Limit: ${limit} characters\n` +
-              `Over by: ${content.length - limit} characters\n\n` +
-              `Please shorten your content or use platform-specific content.`
+            `Current: ${content.length} characters\n` +
+            `Limit: ${limit} characters\n` +
+            `Over by: ${content.length - limit} characters\n\n` +
+            `Please shorten your content or use platform-specific content.`
           );
           return false;
         }
@@ -240,9 +240,9 @@ export default function Dashboard() {
         if (platformText.length > limit) {
           alert(
             `Content too long for ${platform.toUpperCase()}!\n\n` +
-              `Current: ${platformText.length} characters\n` +
-              `Limit: ${limit} characters\n` +
-              `Over by: ${platformText.length - limit} characters`
+            `Current: ${platformText.length} characters\n` +
+            `Limit: ${limit} characters\n` +
+            `Over by: ${platformText.length - limit} characters`
           );
           return false;
         }
@@ -436,29 +436,26 @@ export default function Dashboard() {
           <nav className="flex gap-8">
             <button
               onClick={() => setActiveTab("create")}
-              className={`pb-4 px-2 border-b-2 font-medium text-sm flex items-center gap-2 ${
-                activeTab === "create"
+              className={`pb-4 px-2 border-b-2 font-medium text-sm flex items-center gap-2 ${activeTab === "create"
                   ? "border-orange-500 text-orange-600"
                   : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}>
+                }`}>
               <FaPlus /> Create Post
             </button>
             <button
               onClick={() => setActiveTab("drafts")}
-              className={`pb-4 px-2 border-b-2 font-medium text-sm flex items-center gap-2 ${
-                activeTab === "drafts"
+              className={`pb-4 px-2 border-b-2 font-medium text-sm flex items-center gap-2 ${activeTab === "drafts"
                   ? "border-orange-500 text-orange-600"
                   : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}>
+                }`}>
               <FaPlus /> Drafts ({drafts.length})
             </button>
             <button
               onClick={() => setActiveTab("history")}
-              className={`pb-4 px-2 border-b-2 font-medium text-sm flex items-center gap-2 ${
-                activeTab === "history"
+              className={`pb-4 px-2 border-b-2 font-medium text-sm flex items-center gap-2 ${activeTab === "history"
                   ? "border-orange-500 text-orange-600"
                   : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}>
+                }`}>
               <FaHistory /> Posts History
             </button>
             <button
@@ -473,11 +470,10 @@ export default function Dashboard() {
             </button>
             <button
               onClick={() => setActiveTab("settings")}
-              className={`pb-4 px-2 border-b-2 font-medium text-sm flex items-center gap-2 ${
-                activeTab === "settings"
+              className={`pb-4 px-2 border-b-2 font-medium text-sm flex items-center gap-2 ${activeTab === "settings"
                   ? "border-orange-500 text-orange-600"
                   : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}>
+                }`}>
               <FaCog /> Connected Accounts
             </button>
           </nav>
@@ -515,11 +511,10 @@ export default function Dashboard() {
                         <button
                           key={platform.id}
                           onClick={() => togglePlatform(platform.id)}
-                          className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-all ${
-                            isSelected
+                          className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-all ${isSelected
                               ? "border-blue-500 bg-blue-50"
                               : "border-gray-200 hover:border-gray-300"
-                          } ${!isConnected && "opacity-50"}`}>
+                            } ${!isConnected && "opacity-50"}`}>
                           <Icon className={`text-2xl ${platform.color}`} />
                           <div className="text-left">
                             <div className="font-medium">{platform.name}</div>
@@ -624,13 +619,12 @@ export default function Dashboard() {
                               return (
                                 <div
                                   key={platform}
-                                  className={`text-xs px-2 py-1 rounded ${
-                                    isOver
+                                  className={`text-xs px-2 py-1 rounded ${isOver
                                       ? "bg-red-100 text-red-800 font-semibold"
                                       : isNear
-                                      ? "bg-yellow-100 text-yellow-800"
-                                      : "bg-gray-100 text-gray-600"
-                                  }`}>
+                                        ? "bg-yellow-100 text-yellow-800"
+                                        : "bg-gray-100 text-gray-600"
+                                    }`}>
                                   {platform === "twitter" ? "X" : platform}:{" "}
                                   {content.length}/{limit}
                                   {isOver &&
@@ -676,27 +670,24 @@ export default function Dashboard() {
                                   [platform]: e.target.value,
                                 })
                               }
-                              className={`w-full h-24 p-3 border rounded-lg ${
-                                isOver
+                              className={`w-full h-24 p-3 border rounded-lg ${isOver
                                   ? "border-red-500 bg-red-50"
                                   : isNear
-                                  ? "border-yellow-500 bg-yellow-50"
-                                  : "border-gray-300"
-                              }`}
+                                    ? "border-yellow-500 bg-yellow-50"
+                                    : "border-gray-300"
+                                }`}
                               maxLength={maxLength}
                             />
                             <div
-                              className={`text-xs mt-1 ${
-                                isOver
+                              className={`text-xs mt-1 ${isOver
                                   ? "text-red-600 font-semibold"
                                   : isNear
-                                  ? "text-yellow-600"
-                                  : "text-gray-500"
-                              }`}>
+                                    ? "text-yellow-600"
+                                    : "text-gray-500"
+                                }`}>
                               {currentLength} / {maxLength}
                               {isOver &&
-                                ` - ${
-                                  currentLength - maxLength
+                                ` - ${currentLength - maxLength
                                 } characters over limit!`}
                             </div>
                           </div>
@@ -787,20 +778,18 @@ export default function Dashboard() {
                   <div className="flex gap-4">
                     <button
                       onClick={() => setIsScheduled(false)}
-                      className={`px-4 py-2 rounded-lg ${
-                        !isScheduled
+                      className={`px-4 py-2 rounded-lg ${!isScheduled
                           ? "bg-blue-600 text-white"
                           : "bg-gray-100 text-gray-700"
-                      }`}>
+                        }`}>
                       Publish now
                     </button>
                     <button
                       onClick={() => setIsScheduled(true)}
-                      className={`px-4 py-2 rounded-lg ${
-                        isScheduled
+                      className={`px-4 py-2 rounded-lg ${isScheduled
                           ? "bg-blue-600 text-white"
                           : "bg-gray-100 text-gray-700"
-                      }`}>
+                        }`}>
                       Schedule for later
                     </button>
                   </div>
@@ -848,8 +837,8 @@ export default function Dashboard() {
                     {posting
                       ? "Posting..."
                       : isScheduled
-                      ? "Schedule"
-                      : "Publish"}
+                        ? "Schedule"
+                        : "Publish"}
                   </button>
                   <button
                     onClick={() => {
@@ -985,11 +974,10 @@ export default function Dashboard() {
                           )}
                         </div>
                         <span
-                          className={`text-xs px-2 py-1 rounded ${
-                            post.status === "published"
+                          className={`text-xs px-2 py-1 rounded ${post.status === "published"
                               ? "bg-green-100 text-green-800"
                               : "bg-yellow-100 text-yellow-800"
-                          }`}>
+                            }`}>
                           {post.status}
                         </span>
                       </div>
@@ -997,11 +985,11 @@ export default function Dashboard() {
                       <div className="text-xs text-gray-500">
                         {post.scheduledFor
                           ? `Scheduled for: ${new Date(
-                              post.scheduledFor
-                            ).toLocaleString()}`
+                            post.scheduledFor
+                          ).toLocaleString()}`
                           : `Posted: ${new Date(
-                              post.createdAt
-                            ).toLocaleString()}`}
+                            post.createdAt
+                          ).toLocaleString()}`}
                       </div>
                     </div>
                   ))}
@@ -1042,11 +1030,10 @@ export default function Dashboard() {
                             window.location.href = `/oauth/${oauthPlatform}/authorize`;
                           }
                         }}
-                        className={`px-4 py-2 rounded-lg ${
-                          isConnected
+                        className={`px-4 py-2 rounded-lg ${isConnected
                             ? "bg-green-100 text-green-700 cursor-default"
                             : "bg-orange-500 text-white hover:bg-orange-600"
-                        }`}>
+                          }`}>
                         {isConnected ? "Connected" : "Connect"}
                       </button>
                     </div>
@@ -1125,8 +1112,7 @@ export default function Dashboard() {
           // Set default content if no platforms selected
           if (selectedPlatforms.length === 0) {
             setContent(
-              `${
-                blog.excerpt || blog.content.substring(0, 200)
+              `${blog.excerpt || blog.content.substring(0, 200)
               }...\n\nRead the full story →`
             );
           }
