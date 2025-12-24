@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { savePost, getToken } from "@/lib/azure-storage";
 import { postToLinkedIn } from "@/lib/platforms/linkedin";
 import { postToFacebook, postToInstagram } from "@/lib/platforms/facebook";
 import { postToTwitter } from "@/lib/platforms/twitter";
+import { getUserId } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const userId = getUserId();
 
     const {
       content,

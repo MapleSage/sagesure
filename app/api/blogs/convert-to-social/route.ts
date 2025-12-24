@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { getUserId } from "@/lib/auth";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getBlog } from "@/lib/azure-storage";
 
@@ -7,12 +7,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function POST(req: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const userId = getUserId();
 
     const { blogId, blogUrl, platforms } = await req.json();
 

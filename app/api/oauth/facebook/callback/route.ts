@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { getUserId } from "@/lib/auth";
 import { exchangeFacebookCode } from "@/lib/platforms/facebook";
 import { saveToken } from "@/lib/azure-storage";
 
 export async function GET(req: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
+    const userId = getUserId();
 
     console.log("[Facebook Callback] userId:", userId);
 

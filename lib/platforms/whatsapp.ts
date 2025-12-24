@@ -74,8 +74,8 @@ export async function postToWhatsApp(
 export async function postToWhatsAppBroadcast(
   accessToken: string,
   content: string,
-  mediaUrl?: string,
-  recipientNumbers: string[]
+  recipientNumbers: string[],
+  mediaUrl?: string
 ) {
   try {
     const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;

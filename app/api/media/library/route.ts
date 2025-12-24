@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { getUserId } from "@/lib/auth";
 import { getUserMedia, getUserFolders, searchMedia } from "@/lib/azure-storage";
 
 export async function GET(req: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const userId = getUserId();
 
     const { searchParams } = new URL(req.url);
     const type = searchParams.get("type") as "image" | "video" | null;

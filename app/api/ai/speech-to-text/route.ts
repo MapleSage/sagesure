@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { getUserId } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const userId = getUserId();
 
     const formData = await req.formData();
     const audioFile = formData.get("audio") as File;

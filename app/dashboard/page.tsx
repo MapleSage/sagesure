@@ -54,18 +54,10 @@ export default function Dashboard() {
   const [linkedBlogUrl, setLinkedBlogUrl] = useState("");
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.authenticated) {
-          setUser(data.user);
-          setLoading(false);
-        } else {
-          router.push("/");
-        }
-      })
-      .catch(() => router.push("/"));
-  }, [router]);
+    // No auth required - set default user
+    setUser({ email: "demo@sagesure.io" });
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -140,11 +132,6 @@ export default function Dashboard() {
     );
   };
 
-  const handleLogout = async () => {
-    const res = await fetch("/api/auth/logout", { method: "POST" });
-    const data = await res.json();
-    if (data.logoutUrl) window.location.href = data.logoutUrl;
-  };
 
   const handleGenerateAI = async () => {
     if (!aiPrompt.trim()) return;
@@ -439,11 +426,6 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-600">{user?.email}</span>
-              <button
-                onClick={handleLogout}
-                className="text-sm text-gray-600 hover:text-gray-900">
-                Sign out
-              </button>
             </div>
           </div>
         </div>

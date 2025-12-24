@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { getUserId } from "@/lib/auth";
 import { put } from "@vercel/blob";
 import { saveMedia } from "@/lib/azure-storage";
 
 export async function POST(req: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const userId = getUserId();
 
     const formData = await req.formData();
     const file = formData.get("file") as File;

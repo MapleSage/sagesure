@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { getUserId } from "@/lib/auth";
 import { publishBlogToHubSpot, saveDraftToHubSpot } from "@/lib/hubspot";
 import { saveBlog } from "@/lib/azure-storage";
 
 export async function POST(req: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
-    const userEmail = cookieStore.get("userEmail")?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const userId = getUserId();
+    const userEmail = "demo@sagesure.io"; // Default user email
 
     const { title, content, excerpt, tags, status } = await req.json();
 

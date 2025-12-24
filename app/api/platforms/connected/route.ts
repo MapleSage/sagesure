@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { getUserId } from "@/lib/auth";
 import { getUserTokens } from "@/lib/azure-storage";
 
 export async function GET(req: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
+    const userId = getUserId();
 
     console.log("[Connected Platforms] userId:", userId);
-
-    if (!userId) {
-      console.log("[Connected Platforms] No userId found");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const tokens = await getUserTokens(userId);
     const platforms = tokens.map((t) => t.platform);
