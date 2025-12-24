@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { getUserId } from "@/lib/auth";
 import { exchangeTwitterCode } from "@/lib/platforms/twitter";
 import { saveToken } from "@/lib/azure-storage";
 
 export async function GET(req: NextRequest) {
   try {
+    const userId = getUserId();
     const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
     const codeVerifier = cookieStore.get("twitter_verifier")?.value;
 
     console.log("[Twitter Callback] userId:", userId);
@@ -15,9 +16,9 @@ export async function GET(req: NextRequest) {
       codeVerifier ? "present" : "missing"
     );
 
-    if (!userId || !codeVerifier) {
+    if (!codeVerifier) {
       console.log(
-        "[Twitter Callback] Missing userId or verifier, redirecting to home"
+        "[Twitter Callback] Missing verifier, redirecting to home"
       );
       return NextResponse.redirect(
         new URL("/", process.env.NEXTAUTH_URL || req.url)

@@ -1,21 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { getUserId } from "@/lib/auth";
 import { exchangeFacebookCode } from "@/lib/platforms/facebook";
 import { saveToken } from "@/lib/azure-storage";
 
 export async function GET(req: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
+    const userId = getUserId();
 
     console.log("[Facebook Callback] userId:", userId);
-
-    if (!userId) {
-      console.log("[Facebook Callback] No userId found, redirecting to home");
-      return NextResponse.redirect(
-        new URL("/", process.env.NEXTAUTH_URL || req.url)
-      );
-    }
 
     const { searchParams } = new URL(req.url);
     const code = searchParams.get("code");
