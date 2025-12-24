@@ -178,16 +178,28 @@ export function getDefaultRedirectUri() {
 }
 
 export async function exchangeFacebookCode(code: string, redirectUri: string) {
-  const response = await axios.get(
-    "https://graph.facebook.com/v18.0/oauth/access_token",
-    {
-      params: {
-        client_id: process.env.META_CLIENT_ID,
-        client_secret: process.env.META_CLIENT_SECRET,
-        redirect_uri: redirectUri,
-        code,
-      },
-    }
-  );
-  return response.data;
+  try {
+    console.log("[Facebook] Exchanging code for access token");
+    console.log("[Facebook] Redirect URI:", redirectUri);
+    console.log("[Facebook] Client ID:", process.env.META_CLIENT_ID);
+    console.log("[Facebook] Code:", code?.substring(0, 20) + "...");
+
+    const response = await axios.get(
+      "https://graph.facebook.com/v18.0/oauth/access_token",
+      {
+        params: {
+          client_id: process.env.META_CLIENT_ID,
+          client_secret: process.env.META_CLIENT_SECRET,
+          redirect_uri: redirectUri,
+          code,
+        },
+      }
+    );
+
+    console.log("[Facebook] Token exchange successful");
+    return response.data;
+  } catch (error: any) {
+    console.error("[Facebook] Token exchange failed:", error.response?.data || error.message);
+    throw error;
+  }
 }
