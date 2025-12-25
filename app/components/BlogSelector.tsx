@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FaBlog, FaTimes, FaSpinner, FaExternalLinkAlt } from "react-icons/fa";
+import { FaBlog, FaTimes, FaSpinner, FaExternalLinkAlt, FaSync } from "react-icons/fa";
 
 interface Blog {
   id: string;
@@ -35,6 +35,7 @@ export default function BlogSelector({
   const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
   const [blogUrl, setBlogUrl] = useState("");
   const [blogFilter, setBlogFilter] = useState<string>("all");
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -58,6 +59,29 @@ export default function BlogSelector({
       console.error("Failed to load blogs:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSyncRSS = async () => {
+    setSyncing(true);
+    try {
+      const response = await fetch("/api/blogs/sync-rss", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blogFilter: blogFilter !== "all" ? blogFilter : undefined }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert(data.message);
+        loadBlogs(); // Reload blogs after sync
+      } else {
+        alert(data.error || "Failed to sync RSS feeds");
+      }
+    } catch (error) {
+      console.error("RSS sync error:", error);
+      alert("Failed to sync RSS feeds");
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -142,9 +166,25 @@ export default function BlogSelector({
             <div className="flex flex-col items-center justify-center h-full text-gray-500">
               <FaBlog className="text-6xl mb-4 opacity-50" />
               <p className="text-lg mb-2">No blogs yet</p>
-              <p className="text-sm">
-                Create a blog first to convert it to social posts
+              <p className="text-sm mb-4">
+                Sync RSS feeds to import blog posts from SageSure AI and MapleSage
               </p>
+              <button
+                onClick={handleSyncRSS}
+                disabled={syncing}
+                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 flex items-center gap-2">
+                {syncing ? (
+                  <>
+                    <FaSpinner className="animate-spin" />
+                    Syncing RSS Feeds...
+                  </>
+                ) : (
+                  <>
+                    <FaSync />
+                    Sync RSS Feeds
+                  </>
+                )}
+              </button>
             </div>
           ) : (
             <div className="space-y-4">
