@@ -192,52 +192,63 @@ export default function BlogSelector({
                 <div
                   key={blog.id}
                   onClick={() => setSelectedBlog(blog)}
-                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                  className={`border-2 rounded-lg cursor-pointer transition-all overflow-hidden ${
                     selectedBlog?.id === blog.id
                       ? "border-blue-500 bg-blue-50"
                       : "border-gray-200 hover:border-gray-300"
                   }`}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-lg">
-                          {blog.title}
-                        </h3>
-                        {(blog as any).blogName && (
-                          <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                            {(blog as any).blogName}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-600 mb-2">
-                        {blog.excerpt || blog.content.substring(0, 150)}...
-                      </p>
-                      <div className="flex items-center gap-4 text-xs text-gray-500">
-                        <span>
-                          {new Date(blog.createdAt).toLocaleDateString()}
-                        </span>
-                        <span
-                          className={`px-2 py-1 rounded ${
-                            blog.status === "published"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-yellow-100 text-yellow-800"
-                          }`}>
-                          {blog.status}
-                        </span>
-                        {(blog as any).source === "rss" && (
-                          <span className="text-xs text-purple-600">
-                            RSS Feed
-                          </span>
-                        )}
-                      </div>
+                  {(blog as any).featuredImageUrl && (
+                    <div className="w-full h-32 overflow-hidden">
+                      <img
+                        src={(blog as any).featuredImageUrl}
+                        alt={blog.title}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
-                    {selectedBlog?.id === blog.id && (
-                      <div className="ml-4">
-                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                          <FaTimes className="text-white text-xs rotate-45" />
+                  )}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-lg">
+                            {blog.title}
+                          </h3>
+                          {(blog as any).blogName && (
+                            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                              {(blog as any).blogName}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">
+                          {blog.excerpt || blog.content.substring(0, 150)}...
+                        </p>
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <span>
+                            {new Date(blog.createdAt).toLocaleDateString()}
+                          </span>
+                          <span
+                            className={`px-2 py-1 rounded ${
+                              blog.status === "published"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}>
+                            {blog.status}
+                          </span>
+                          {(blog as any).source === "rss" && (
+                            <span className="text-xs text-purple-600">
+                              RSS Feed
+                            </span>
+                          )}
                         </div>
                       </div>
-                    )}
+                      {selectedBlog?.id === blog.id && (
+                        <div className="ml-4">
+                          <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                            <FaTimes className="text-white text-xs rotate-45" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

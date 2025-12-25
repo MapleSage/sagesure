@@ -288,24 +288,34 @@ export default function BlogsPage() {
                 {(showHubSpotBlogs ? hubspotBlogs : blogs).map((blog) => (
                   <div
                     key={blog.id}
-                    className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-xl font-bold text-gray-900">
-                            {blog.title}
-                          </h3>
-                          {blog.source === "rss" && (
-                            <span className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded">
-                              RSS
-                            </span>
-                          )}
-                          {blog.blogName && (
-                            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                              {blog.blogName}
-                            </span>
-                          )}
-                        </div>
+                    className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden">
+                    {blog.featuredImageUrl && (
+                      <div className="w-full h-48 overflow-hidden">
+                        <img
+                          src={blog.featuredImageUrl}
+                          alt={blog.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="p-6">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-xl font-bold text-gray-900">
+                              {blog.title}
+                            </h3>
+                            {blog.source === "rss" && (
+                              <span className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded">
+                                RSS
+                              </span>
+                            )}
+                            {blog.blogName && (
+                              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                                {blog.blogName}
+                              </span>
+                            )}
+                          </div>
                         {blog.link && (
                           <a
                             href={blog.link}
@@ -393,6 +403,7 @@ export default function BlogsPage() {
                           {new Date(blog.createdAt).toLocaleDateString()}
                         </div>
                       </div>
+                    </div>
                     </div>
                   </div>
                 ))}
