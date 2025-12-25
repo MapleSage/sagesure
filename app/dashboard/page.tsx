@@ -957,21 +957,22 @@ export default function Dashboard() {
                       className="border rounded-lg p-4 hover:bg-gray-50">
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex gap-2">
-                          {JSON.parse(post.platforms || "[]").map(
-                            (platform: string) => {
-                              const p = platforms.find(
-                                (pl) => pl.id === platform
-                              );
-                              if (!p) return null;
-                              const Icon = p.icon;
-                              return (
-                                <Icon
-                                  key={platform}
-                                  className={`text-lg ${p.color}`}
-                                />
-                              );
-                            }
-                          )}
+                          {(Array.isArray(post.platforms)
+                            ? post.platforms
+                            : JSON.parse(post.platforms || "[]")
+                          ).map((platform: string) => {
+                            const p = platforms.find(
+                              (pl) => pl.id === platform
+                            );
+                            if (!p) return null;
+                            const Icon = p.icon;
+                            return (
+                              <Icon
+                                key={platform}
+                                className={`text-lg ${p.color}`}
+                              />
+                            );
+                          })}
                         </div>
                         <span
                           className={`text-xs px-2 py-1 rounded ${post.status === "published"
