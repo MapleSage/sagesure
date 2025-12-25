@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserId } from "@/lib/auth";
-import { put } from "@vercel/blob";
+import { uploadFile, ensureContainerExists } from "@/lib/azure-blob";
 import { saveMedia } from "@/lib/azure-storage";
 
 export async function POST(req: NextRequest) {
@@ -57,14 +57,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Upload to Vercel Blob
-    console.log("[Upload] Uploading to Vercel Blob...");
-    const blob = await put(`${userId}/${Date.now()}-${file.name}`, file, {
-      access: "public",
-      addRandomSuffix: false,
-    });
+    // Ensure container exists
+    await ensureContainerExists();
 
-    console.log("[Upload] Upload successful! URL:", blob.url);
+    // Convert file to buffer
+    console.log("[Upload] Uploading to Azure Blob Storage...");
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Upload to Azure Blob Storage
+    const blobUrl = await uploadFile(userId, buffer, file.name, file.type);
+
+    console.log("[Upload] Upload successful! URL:", blobUrl);
 
     // Determine media type
     const type = file.type.startsWith("video/") ? "video" : "image";
@@ -74,8 +78,8 @@ export async function POST(req: NextRequest) {
     try {
       const media = await saveMedia({
         userId,
-        url: blob.url,
-        thumbnail: blob.url, // For images, use same URL. For videos, would need thumbnail generation
+        url: blobUrl,
+        thumbnail: blobUrl, // For images, use same URL. For videos, would need thumbnail generation
         filename: file.name,
         type,
         mimeType: file.type,

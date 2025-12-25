@@ -232,6 +232,33 @@ export default function BlogsPage() {
                     }`}>
                     {syncing ? "Syncing..." : "HubSpot Blogs"}
                   </button>
+                  <button
+                    onClick={async () => {
+                      setSyncing(true);
+                      try {
+                        const response = await fetch("/api/blogs/sync-rss", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ blogFilter: undefined }),
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                          alert(data.message);
+                          fetchBlogs();
+                        } else {
+                          alert(data.error || "Failed to sync RSS feeds");
+                        }
+                      } catch (error) {
+                        console.error("RSS sync error:", error);
+                        alert("Failed to sync RSS feeds");
+                      } finally {
+                        setSyncing(false);
+                      }
+                    }}
+                    disabled={syncing}
+                    className="px-4 py-2 rounded-lg text-sm bg-purple-500 text-white hover:bg-purple-600 disabled:bg-gray-300">
+                    {syncing ? "Syncing..." : "Sync RSS Feeds"}
+                  </button>
                 </div>
               </div>
               <button
@@ -264,9 +291,30 @@ export default function BlogsPage() {
                     className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1">
-                        <h3 className="text-xl font-bold text-gray-900 mb-1">
-                          {blog.title}
-                        </h3>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-xl font-bold text-gray-900">
+                            {blog.title}
+                          </h3>
+                          {blog.source === "rss" && (
+                            <span className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded">
+                              RSS
+                            </span>
+                          )}
+                          {blog.blogName && (
+                            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                              {blog.blogName}
+                            </span>
+                          )}
+                        </div>
+                        {blog.link && (
+                          <a
+                            href={blog.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:underline">
+                            View Original →
+                          </a>
+                        )}
                         {blog.hubspotUrl && (
                           <a
                             href={blog.hubspotUrl}
@@ -275,6 +323,11 @@ export default function BlogsPage() {
                             className="text-sm text-blue-600 hover:underline">
                             View on HubSpot →
                           </a>
+                        )}
+                        {blog.author && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            By {blog.author}
+                          </p>
                         )}
                       </div>
                       <span

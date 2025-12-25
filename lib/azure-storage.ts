@@ -218,6 +218,14 @@ export async function saveBlog(blog: {
   excerpt?: string;
   status: string;
   tags?: string[];
+  source?: string; // 'user', 'rss', 'hubspot'
+  blogName?: string; // 'SageSure AI', 'MapleSage Blog'
+  blogBrand?: string; // 'sagesure', 'maplesage'
+  link?: string; // Original RSS/HubSpot URL
+  author?: string;
+  pubDate?: string; // Original publication date
+  rssId?: string; // Original RSS item ID for deduplication
+  featuredImageUrl?: string; // Featured image stored in Vercel Blob
 }) {
   const blogId = Date.now().toString();
   const entity = {
@@ -228,6 +236,14 @@ export async function saveBlog(blog: {
     excerpt: blog.excerpt || "",
     status: blog.status,
     tags: JSON.stringify(blog.tags || []),
+    source: blog.source || "user",
+    blogName: blog.blogName || "",
+    blogBrand: blog.blogBrand || "",
+    link: blog.link || "",
+    author: blog.author || "",
+    pubDate: blog.pubDate || new Date().toISOString(),
+    rssId: blog.rssId || "",
+    featuredImageUrl: blog.featuredImageUrl || "",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -250,6 +266,14 @@ export async function getUserBlogs(userId: string) {
       excerpt: entity.excerpt,
       status: entity.status,
       tags: JSON.parse(entity.tags as string),
+      source: entity.source || "user",
+      blogName: entity.blogName || "",
+      blogBrand: entity.blogBrand || "",
+      link: entity.link || "",
+      author: entity.author || "",
+      pubDate: entity.pubDate,
+      rssId: entity.rssId || "",
+      featuredImageUrl: entity.featuredImageUrl || "",
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     });
@@ -273,12 +297,44 @@ export async function getBlog(userId: string, blogId: string) {
       excerpt: entity.excerpt,
       status: entity.status,
       tags: JSON.parse(entity.tags as string),
+      source: entity.source || "user",
+      blogName: entity.blogName || "",
+      blogBrand: entity.blogBrand || "",
+      link: entity.link || "",
+      author: entity.author || "",
+      pubDate: entity.pubDate,
+      rssId: entity.rssId || "",
+      featuredImageUrl: entity.featuredImageUrl || "",
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     };
   } catch (error: any) {
     if (error.statusCode === 404) return null;
     throw error;
+  }
+}
+
+// Check if RSS blog post already exists by rssId
+export async function getBlogByRssId(userId: string, rssId: string) {
+  try {
+    const blogs = [];
+    const entities = blogsTable.listEntities({
+      queryOptions: { filter: `PartitionKey eq '${userId}' and rssId eq '${rssId}'` },
+    });
+
+    for await (const entity of entities) {
+      blogs.push({
+        id: entity.rowKey,
+        userId: entity.partitionKey,
+        title: entity.title,
+        rssId: entity.rssId,
+      });
+    }
+
+    return blogs.length > 0 ? blogs[0] : null;
+  } catch (error: any) {
+    console.error("[getBlogByRssId] Error:", error);
+    return null;
   }
 }
 

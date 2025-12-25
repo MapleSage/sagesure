@@ -159,9 +159,16 @@ export default function BlogSelector({
                   }`}>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-2">
-                        {blog.title}
-                      </h3>
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-semibold text-lg">
+                          {blog.title}
+                        </h3>
+                        {(blog as any).blogName && (
+                          <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                            {(blog as any).blogName}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-600 mb-2">
                         {blog.excerpt || blog.content.substring(0, 150)}...
                       </p>
@@ -177,6 +184,11 @@ export default function BlogSelector({
                           }`}>
                           {blog.status}
                         </span>
+                        {(blog as any).source === "rss" && (
+                          <span className="text-xs text-purple-600">
+                            RSS Feed
+                          </span>
+                        )}
                       </div>
                     </div>
                     {selectedBlog?.id === blog.id && (

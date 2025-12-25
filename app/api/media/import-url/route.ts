@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserId } from "@/lib/auth";
-import { put } from "@vercel/blob";
+import { uploadFile, ensureContainerExists } from "@/lib/azure-blob";
 import { saveMedia } from "@/lib/azure-storage";
 
 export async function POST(req: NextRequest) {
@@ -36,25 +36,25 @@ export async function POST(req: NextRequest) {
       type = "video";
     }
 
-    console.log("[Import URL] Uploading to Vercel Blob...");
+    console.log("[Import URL] Uploading to Azure Blob Storage...");
 
-    // Upload to Vercel Blob
-    const uploadedBlob = await put(
-      `${userId}/${Date.now()}-${filename}`,
-      blob,
-      {
-        access: "public",
-        addRandomSuffix: false,
-      }
-    );
+    // Ensure container exists
+    await ensureContainerExists();
 
-    console.log("[Import URL] Upload successful! URL:", uploadedBlob.url);
+    // Convert blob to buffer
+    const arrayBuffer = await blob.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Upload to Azure Blob Storage
+    const blobUrl = await uploadFile(userId, buffer, filename, contentType);
+
+    console.log("[Import URL] Upload successful! URL:", blobUrl);
 
     // Save metadata to database
     const media = await saveMedia({
       userId,
-      url: uploadedBlob.url,
-      thumbnail: uploadedBlob.url,
+      url: blobUrl,
+      thumbnail: blobUrl,
       filename,
       type,
       mimeType: contentType,
