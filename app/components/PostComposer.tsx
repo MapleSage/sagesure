@@ -169,6 +169,31 @@ export default function PostComposer({
                   Use same content for all platforms
                 </span>
               </label>
+              {useSameContent && (
+                <p className="text-xs text-blue-700 mt-1 ml-6">
+                  💡 Uncheck this to customize content for each platform
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Character limit warnings */}
+          {selectedPlatforms.length > 0 && useSameContent && (
+            <div className="mb-4">
+              {selectedPlatforms.map((platformId) => {
+                const platform = platforms.find((p) => p.id === platformId);
+                if (!platform) return null;
+                const exceedsLimit = content.length > platform.maxLength;
+                if (!exceedsLimit) return null;
+                return (
+                  <div
+                    key={platformId}
+                    className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-800 mb-2">
+                    ⚠️ <strong>{platform.name}</strong>: Content exceeds limit ({content.length}/{platform.maxLength} characters).
+                    {platformId === 'twitter' && ' Twitter/X posts are limited to 280 characters.'}
+                  </div>
+                );
+              })}
             </div>
           )}
 

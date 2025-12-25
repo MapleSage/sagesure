@@ -55,6 +55,7 @@ export default function MediaLibraryModal({
   const [showUploadMenu, setShowUploadMenu] = useState(false);
   const [showGoogleDrive, setShowGoogleDrive] = useState(false);
   const [showCanva, setShowCanva] = useState(false);
+  const [showAllMedia, setShowAllMedia] = useState(false);
 
   // Load media library
   const loadMedia = useCallback(async () => {
@@ -217,16 +218,22 @@ export default function MediaLibraryModal({
               {/* Recently Updated */}
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Recently updated</h3>
-                  <button className="text-sm text-teal-600 hover:text-teal-700">
-                    View all →
-                  </button>
+                  <h3 className="text-lg font-semibold">
+                    {showAllMedia ? "All Media" : "Recently updated"}
+                  </h3>
+                  {media.length > 12 && (
+                    <button
+                      onClick={() => setShowAllMedia(!showAllMedia)}
+                      className="text-sm text-teal-600 hover:text-teal-700">
+                      {showAllMedia ? "← Show recent" : `View all (${media.length}) →`}
+                    </button>
+                  )}
                 </div>
                 <div
                   className="grid grid-cols-4 gap-4"
                   onDrop={handleDrop}
                   onDragOver={(e) => e.preventDefault()}>
-                  {media.slice(0, 12).map((item) => {
+                  {(showAllMedia ? media : media.slice(0, 12)).map((item) => {
                     const isSelected = selectedMedia.find(
                       (m) => m.id === item.id
                     );
