@@ -6,7 +6,11 @@ export async function postToLinkedIn(
   imageUrl?: string
 ) {
   try {
+    console.log("[LinkedIn] Starting post to LinkedIn...");
+    console.log("[LinkedIn] Content length:", content.length);
+
     // Get user profile
+    console.log("[LinkedIn] Fetching user profile...");
     const profileResponse = await axios.get(
       "https://api.linkedin.com/v2/userinfo",
       {
@@ -14,6 +18,7 @@ export async function postToLinkedIn(
       }
     );
     const userId = profileResponse.data.sub;
+    console.log("[LinkedIn] User ID:", userId);
 
     // Create post using new API
     const postData: any = {
@@ -32,8 +37,11 @@ export async function postToLinkedIn(
     if (imageUrl) {
       // For now, just post text - image upload requires downloading and re-uploading
       // which is complex. User can add images via URL in the post text
-      console.log("Image URL provided but not uploaded:", imageUrl);
+      console.log("[LinkedIn] Image URL provided but not uploaded:", imageUrl);
     }
+
+    console.log("[LinkedIn] Posting to LinkedIn API...");
+    console.log("[LinkedIn] Post data:", JSON.stringify(postData, null, 2));
 
     const response = await axios.post(
       "https://api.linkedin.com/rest/posts",
@@ -48,16 +56,24 @@ export async function postToLinkedIn(
       }
     );
 
+    const postId = response.headers["x-restli-id"] || response.data?.id || "posted";
+    console.log("[LinkedIn] Post successful!");
+    console.log("[LinkedIn] Response status:", response.status);
+    console.log("[LinkedIn] Post ID:", postId);
+    console.log("[LinkedIn] Response headers:", response.headers);
+    console.log("[LinkedIn] Response data:", JSON.stringify(response.data, null, 2));
+
     return {
       success: true,
-      postId: response.headers["x-restli-id"] || "posted",
+      postId: postId,
       platform: "linkedin",
     };
   } catch (error: any) {
-    console.error(
-      "LinkedIn post error:",
-      error.response?.data || error.message
-    );
+    console.error("[LinkedIn] Post failed!");
+    console.error("[LinkedIn] Error status:", error.response?.status);
+    console.error("[LinkedIn] Error headers:", error.response?.headers);
+    console.error("[LinkedIn] Error data:", JSON.stringify(error.response?.data, null, 2));
+    console.error("[LinkedIn] Error message:", error.message);
 
     let errorMessage = error.message;
     if (error.response?.data) {
@@ -76,6 +92,9 @@ export async function postToLinkedIn(
     } else if (error.response?.status === 401) {
       errorMessage =
         "LinkedIn token expired. Please reconnect your LinkedIn account.";
+    } else if (error.response?.status === 403) {
+      errorMessage =
+        "LinkedIn permission error. Please reconnect your LinkedIn account with the correct permissions (w_member_social).";
     }
 
     return {
