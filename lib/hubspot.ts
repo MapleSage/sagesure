@@ -1,8 +1,10 @@
 import { Client } from "@hubspot/api-client";
 
-const hubspotClient = new Client({
-  accessToken: process.env.HUBSPOT_API_KEY,
-});
+const hubspotClient = process.env.HUBSPOT_API_KEY
+  ? new Client({
+      accessToken: process.env.HUBSPOT_API_KEY,
+    })
+  : null;
 
 // HubSpot Portal ID: 3475345
 // Blog configurations
@@ -29,6 +31,10 @@ export async function publishBlogToHubSpot(blog: {
   authorName?: string;
 }) {
   try {
+    if (!hubspotClient) {
+      throw new Error("HubSpot API key not configured");
+    }
+
     const htmlContent = convertMarkdownToHTML(blog.content);
 
     const blogPost = {
@@ -65,6 +71,10 @@ export async function saveDraftToHubSpot(blog: {
   tags?: string[];
 }) {
   try {
+    if (!hubspotClient) {
+      throw new Error("HubSpot API key not configured");
+    }
+
     const htmlContent = convertMarkdownToHTML(blog.content);
 
     const blogPost = {
@@ -140,6 +150,10 @@ function convertMarkdownToHTML(markdown: string): string {
 // Fetch all available blogs/content groups from HubSpot
 export async function getHubSpotBlogs() {
   try {
+    if (!hubspotClient) {
+      throw new Error("HubSpot API key not configured");
+    }
+
     console.log("[HubSpot] Fetching available blogs...");
     const response: any = await hubspotClient.apiRequest({
       method: "GET",
@@ -155,6 +169,10 @@ export async function getHubSpotBlogs() {
 
 export async function getHubSpotBlogPosts(limit = 10, contentGroupId?: string) {
   try {
+    if (!hubspotClient) {
+      throw new Error("HubSpot API key not configured");
+    }
+
     console.log("[HubSpot] Fetching blog posts, limit:", limit);
     console.log("[HubSpot] API Key exists:", !!process.env.HUBSPOT_API_KEY);
     console.log("[HubSpot] Content Group ID filter:", contentGroupId || "all blogs");
