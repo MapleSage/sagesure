@@ -34,17 +34,22 @@ export default function BlogSelector({
   const [converting, setConverting] = useState(false);
   const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
   const [blogUrl, setBlogUrl] = useState("");
+  const [blogFilter, setBlogFilter] = useState<string>("all");
 
   useEffect(() => {
     if (isOpen) {
       loadBlogs();
     }
-  }, [isOpen]);
+  }, [isOpen, blogFilter]);
 
   const loadBlogs = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/blogs/list");
+      const params = new URLSearchParams();
+      if (blogFilter !== "all") {
+        params.append("blog", blogFilter);
+      }
+      const response = await fetch(`/api/blogs/list?${params}`);
       const data = await response.json();
       if (data.success) {
         setBlogs(data.blogs || []);
@@ -110,6 +115,21 @@ export default function BlogSelector({
             className="text-gray-500 hover:text-gray-700">
             <FaTimes className="text-xl" />
           </button>
+        </div>
+
+        {/* Filter */}
+        <div className="px-6 pt-4 pb-2 border-b">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Filter by Blog
+          </label>
+          <select
+            value={blogFilter}
+            onChange={(e) => setBlogFilter(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            <option value="all">All Blogs</option>
+            <option value="sagesure">SageSure AI (sagesure.io)</option>
+            <option value="maplesage">MapleSage Blog (blog.maplesage.com)</option>
+          </select>
         </div>
 
         {/* Content */}

@@ -4,6 +4,23 @@ const hubspotClient = new Client({
   accessToken: process.env.HUBSPOT_API_KEY,
 });
 
+// HubSpot Portal ID: 3475345
+// Blog configurations
+export const HUBSPOT_BLOGS = {
+  sagesure: {
+    id: "SAGESURE_BLOG_ID", // Will need to fetch this from HubSpot API
+    name: "SageSure AI",
+    url: "https://sagesure.io/ai-you-can-be-sure",
+    brand: "sagesure",
+  },
+  maplesage: {
+    id: "MAPLESAGE_BLOG_ID", // Will need to fetch this from HubSpot API
+    name: "MapleSage Blog",
+    url: "https://blog.maplesage.com",
+    brand: "maplesage",
+  },
+};
+
 export async function publishBlogToHubSpot(blog: {
   title: string;
   content: string;
@@ -120,18 +137,63 @@ function convertMarkdownToHTML(markdown: string): string {
   return html;
 }
 
-export async function getHubSpotBlogPosts(limit = 10) {
+// Fetch all available blogs/content groups from HubSpot
+export async function getHubSpotBlogs() {
   try {
+    console.log("[HubSpot] Fetching available blogs...");
+    const response: any = await hubspotClient.apiRequest({
+      method: "GET",
+      path: `/cms/v3/blogs`,
+    });
+    console.log("[HubSpot] Available blogs:", response.results?.length || 0);
+    return response.results || [];
+  } catch (error: any) {
+    console.error("[HubSpot] Fetch blogs error:", error.message);
+    throw new Error(error.message || "Failed to fetch HubSpot blogs");
+  }
+}
+
+export async function getHubSpotBlogPosts(limit = 10, contentGroupId?: string) {
+  try {
+    console.log("[HubSpot] Fetching blog posts, limit:", limit);
+    console.log("[HubSpot] API Key exists:", !!process.env.HUBSPOT_API_KEY);
+    console.log("[HubSpot] Content Group ID filter:", contentGroupId || "all blogs");
+
+    const queryParams: any = {
+      limit: limit,
+    };
+
+    // Filter by specific blog if provided
+    if (contentGroupId) {
+      queryParams.contentGroupId = contentGroupId;
+    }
+
     const response: any = await hubspotClient.apiRequest({
       method: "GET",
       path: `/cms/v3/blogs/posts`,
-      qs: {
-        limit: limit,
-      },
+      qs: queryParams,
     });
-    return response.results || [];
+
+    console.log("[HubSpot] Response received, results count:", response.results?.length || 0);
+
+    // Add blog source metadata to each post
+    const postsWithMetadata = (response.results || []).map((post: any) => ({
+      ...post,
+      blogId: post.contentGroupId,
+      blogName: post.contentGroupId ? getHubSpotBlogName(post.contentGroupId) : "Unknown",
+    }));
+
+    return postsWithMetadata;
   } catch (error: any) {
-    console.error("HubSpot fetch error:", error);
+    console.error("[HubSpot] Fetch error:", error.message);
+    console.error("[HubSpot] Error details:", error);
     throw new Error(error.message || "Failed to fetch HubSpot blogs");
   }
+}
+
+// Helper function to get blog name from ID
+function getHubSpotBlogName(blogId: string): string {
+  const blogs = Object.values(HUBSPOT_BLOGS);
+  const blog = blogs.find(b => b.id === blogId);
+  return blog?.name || "Unknown Blog";
 }
