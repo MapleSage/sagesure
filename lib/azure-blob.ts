@@ -20,7 +20,23 @@ function initializeBlobService() {
 export async function ensureContainerExists() {
   const { containerClient } = initializeBlobService();
   try {
-    await containerClient.createIfNotExists();
+    // Create container with public access for blobs
+    const createResponse = await containerClient.createIfNotExists({
+      access: 'blob', // Allow public read access to blobs
+    });
+
+    // If container already exists, update access level
+    if (!createResponse.succeeded) {
+      try {
+        await containerClient.setAccessPolicy('blob');
+        console.log("[Azure Blob] Updated existing container to public blob access");
+      } catch (accessError: any) {
+        console.warn("[Azure Blob] Could not set public access:", accessError.message);
+        console.warn("[Azure Blob] Note: You may need to enable 'Allow Blob public access' in your Azure Storage account settings");
+      }
+    } else {
+      console.log("[Azure Blob] Container created with public blob access");
+    }
   } catch (error) {
     console.error("Error creating container:", error);
     throw error;
