@@ -6,6 +6,11 @@ export async function GET(req: NextRequest) {
   try {
     const userId = getUserId();
 
+    console.log("[HubSpot Sync] Starting sync...");
+    console.log("[HubSpot Sync] API Key configured:", !!process.env.HUBSPOT_API_KEY);
+    console.log("[HubSpot Sync] API Key length:", process.env.HUBSPOT_API_KEY?.length);
+    console.log("[HubSpot Sync] API Key first 10 chars:", process.env.HUBSPOT_API_KEY?.substring(0, 10));
+
     const hubspotBlogs = await getHubSpotBlogPosts(20);
 
     // Transform HubSpot blogs to our format
@@ -22,11 +27,17 @@ export async function GET(req: NextRequest) {
       source: "hubspot",
     }));
 
+    console.log("[HubSpot Sync] Successfully fetched", blogs.length, "blogs");
     return NextResponse.json({ blogs });
   } catch (error: any) {
-    console.error("HubSpot sync error:", error);
+    console.error("[HubSpot Sync] Error:", error);
+    console.error("[HubSpot Sync] Error message:", error.message);
+    console.error("[HubSpot Sync] Error stack:", error.stack);
     return NextResponse.json(
-      { error: error.message || "Failed to sync with HubSpot" },
+      {
+        error: error.message || "Failed to sync with HubSpot",
+        details: error.toString(),
+      },
       { status: 500 }
     );
   }
