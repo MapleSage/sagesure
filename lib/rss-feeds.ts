@@ -27,6 +27,33 @@ export const RSS_FEEDS = {
   },
 };
 
+// Helper function to strip HTML tags and clean text
+function stripHtml(html: string): string {
+  if (!html) return "";
+
+  // Remove HTML tags
+  let text = html.replace(/<[^>]*>/g, " ");
+
+  // Decode common HTML entities
+  text = text
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+
+  // Remove extra whitespace
+  text = text.replace(/\s+/g, " ").trim();
+
+  // Truncate to reasonable length for excerpt
+  if (text.length > 250) {
+    text = text.substring(0, 250).trim() + "...";
+  }
+
+  return text;
+}
+
 export interface BlogPost {
   id: string;
   title: string;
@@ -77,7 +104,7 @@ export async function fetchRSSFeed(feedUrl: string, blogBrand: string): Promise<
         id: item.guid || item.link || item.title,
         title: item.title || "",
         content: item.contentEncoded || item['content:encoded'] || item.content || item.description || "",
-        excerpt: item.description || item.excerpt || "",
+        excerpt: stripHtml(item.description || item.excerpt || ""),
         link: item.link || "",
         pubDate: item.pubDate || item.isoDate || new Date().toISOString(),
         author: item.creator || item.author || "",

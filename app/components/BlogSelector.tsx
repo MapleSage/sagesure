@@ -34,7 +34,7 @@ export default function BlogSelector({
   const [converting, setConverting] = useState(false);
   const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
   const [blogUrl, setBlogUrl] = useState("");
-  const [blogFilter, setBlogFilter] = useState<string>("all");
+  const [blogFilter, setBlogFilter] = useState<string>("sagesure");
   const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {

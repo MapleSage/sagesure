@@ -26,6 +26,8 @@ export default function BlogsPage() {
   const [showHubSpotBlogs, setShowHubSpotBlogs] = useState(false);
   const [hubspotBlogs, setHubspotBlogs] = useState<any[]>([]);
   const [syncing, setSyncing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(25);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -46,6 +48,11 @@ export default function BlogsPage() {
       fetchBlogs();
     }
   }, [user]);
+
+  // Reset to page 1 when switching between blog sources
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [showHubSpotBlogs]);
 
   const fetchBlogs = () => {
     fetch("/api/blogs/list")
@@ -284,8 +291,69 @@ export default function BlogsPage() {
                 <p className="text-gray-500 mb-4">No HubSpot blogs found.</p>
               </div>
             ) : (
-              <div className="grid gap-6">
-                {(showHubSpotBlogs ? hubspotBlogs : blogs).map((blog) => (
+              <>
+                {/* Pagination Controls - Top */}
+                <div className="bg-white rounded-lg shadow p-4 mb-4">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm text-gray-700">Show:</label>
+                        <select
+                          value={perPage}
+                          onChange={(e) => {
+                            setPerPage(Number(e.target.value));
+                            setCurrentPage(1);
+                          }}
+                          className="border border-gray-300 rounded px-3 py-1 text-sm">
+                          <option value={10}>10</option>
+                          <option value={25}>25</option>
+                          <option value={50}>50</option>
+                          <option value={100}>100</option>
+                        </select>
+                        <span className="text-sm text-gray-700">per page</span>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        Showing {((currentPage - 1) * perPage) + 1} to{" "}
+                        {Math.min(currentPage * perPage, (showHubSpotBlogs ? hubspotBlogs : blogs).length)} of{" "}
+                        {(showHubSpotBlogs ? hubspotBlogs : blogs).length} blogs
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage(1)}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        First
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Prev
+                      </button>
+                      <span className="px-3 py-1 text-sm">
+                        Page {currentPage} of {Math.ceil((showHubSpotBlogs ? hubspotBlogs : blogs).length / perPage)}
+                      </span>
+                      <button
+                        onClick={() => setCurrentPage(currentPage + 1)}
+                        disabled={currentPage >= Math.ceil((showHubSpotBlogs ? hubspotBlogs : blogs).length / perPage)}
+                        className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Next
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage(Math.ceil((showHubSpotBlogs ? hubspotBlogs : blogs).length / perPage))}
+                        disabled={currentPage >= Math.ceil((showHubSpotBlogs ? hubspotBlogs : blogs).length / perPage)}
+                        className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Last
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-6">
+                {(showHubSpotBlogs ? hubspotBlogs : blogs)
+                  .slice((currentPage - 1) * perPage, currentPage * perPage)
+                  .map((blog) => (
                   <div
                     key={blog.id}
                     className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden">
@@ -408,6 +476,47 @@ export default function BlogsPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Pagination Controls - Bottom */}
+              <div className="bg-white rounded-lg shadow p-4 mt-4">
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-gray-600">
+                    Showing {((currentPage - 1) * perPage) + 1} to{" "}
+                    {Math.min(currentPage * perPage, (showHubSpotBlogs ? hubspotBlogs : blogs).length)} of{" "}
+                    {(showHubSpotBlogs ? hubspotBlogs : blogs).length} blogs
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                      First
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                      Prev
+                    </button>
+                    <span className="px-3 py-1 text-sm">
+                      Page {currentPage} of {Math.ceil((showHubSpotBlogs ? hubspotBlogs : blogs).length / perPage)}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      disabled={currentPage >= Math.ceil((showHubSpotBlogs ? hubspotBlogs : blogs).length / perPage)}
+                      className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                      Next
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(Math.ceil((showHubSpotBlogs ? hubspotBlogs : blogs).length / perPage))}
+                      disabled={currentPage >= Math.ceil((showHubSpotBlogs ? hubspotBlogs : blogs).length / perPage)}
+                      className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                      Last
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </>
             )}
           </div>
         )}
