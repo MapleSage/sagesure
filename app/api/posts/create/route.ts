@@ -136,7 +136,9 @@ export async function POST(req: NextRequest) {
               result = await postToInstagram(
                 tokenData.accessToken,
                 platformText,
-                platformMedia
+                platformMedia,
+                tokenData.pageId,
+                tokenData.instagramAccountId
               );
             }
             break;

@@ -75,41 +75,51 @@ export async function postToFacebook(
 export async function postToInstagram(
   accessToken: string,
   content: string,
-  imageUrl: string
+  imageUrl: string,
+  pageId?: string,
+  instagramAccountId?: string
 ) {
   try {
     console.log("[Instagram] Starting post to Instagram...");
     console.log("[Instagram] Content length:", content.length);
     console.log("[Instagram] Image URL:", imageUrl);
+    console.log("[Instagram] Stored Instagram Account ID:", instagramAccountId);
 
-    // Get Instagram business account
-    console.log("[Instagram] Fetching Facebook pages...");
-    const accountResponse = await axios.get(
-      `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`
-    );
+    let igAccountId = instagramAccountId;
+    let pageAccessToken = accessToken;
 
-    if (!accountResponse.data.data || accountResponse.data.data.length === 0) {
-      throw new Error("No Facebook pages found");
-    }
-
-    const page = accountResponse.data.data[0];
-    const pageAccessToken = page.access_token;
-
-    console.log("[Instagram] Using page:", page.name);
-    console.log("[Instagram] Fetching Instagram business account...");
-
-    const igAccountResponse = await axios.get(
-      `https://graph.facebook.com/v18.0/${page.id}?fields=instagram_business_account&access_token=${pageAccessToken}`
-    );
-
-    if (!igAccountResponse.data.instagram_business_account) {
-      throw new Error(
-        "No Instagram business account linked to this Facebook page. Please link your Instagram business account in Facebook Page settings."
+    // If Instagram account ID is not provided, fetch it (backward compatibility)
+    if (!igAccountId) {
+      console.log("[Instagram] No stored Instagram account, fetching from Facebook pages...");
+      const accountResponse = await axios.get(
+        `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`
       );
-    }
 
-    const igAccountId = igAccountResponse.data.instagram_business_account.id;
-    console.log("[Instagram] Instagram account ID:", igAccountId);
+      if (!accountResponse.data.data || accountResponse.data.data.length === 0) {
+        throw new Error("No Facebook pages found");
+      }
+
+      const page = accountResponse.data.data[0];
+      pageAccessToken = page.access_token;
+
+      console.log("[Instagram] Using page:", page.name);
+      console.log("[Instagram] Fetching Instagram business account...");
+
+      const igAccountResponse = await axios.get(
+        `https://graph.facebook.com/v18.0/${page.id}?fields=instagram_business_account&access_token=${pageAccessToken}`
+      );
+
+      if (!igAccountResponse.data.instagram_business_account) {
+        throw new Error(
+          "No Instagram business account linked to this Facebook page. Please link your Instagram business account in Facebook Page settings."
+        );
+      }
+
+      igAccountId = igAccountResponse.data.instagram_business_account.id;
+      console.log("[Instagram] Instagram account ID:", igAccountId);
+    } else {
+      console.log("[Instagram] Using stored Instagram account ID:", igAccountId);
+    }
 
     // Create container
     console.log("[Instagram] Creating media container...");
