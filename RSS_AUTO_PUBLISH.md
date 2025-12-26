@@ -56,8 +56,10 @@ Auto-Publish at Scheduled Times
 
 ## Cron Schedule
 
-- **RSS Monitor**: Every 30 minutes (`*/30 * * * *`)
-- **Post Publisher**: Daily at midnight (`0 0 * * *`)
+- **RSS Monitor**: Daily at 11:30 AM UTC / 4:00 PM Dubai time (`30 11 * * *`)
+- **Post Publisher**: Daily at midnight UTC (`0 0 * * *`)
+
+> **Note**: Vercel Hobby plan limits cron jobs to once per day. For more frequent checks (e.g., every 30 minutes like HubSpot), upgrade to Vercel Pro plan.
 
 ## Configuration
 

@@ -6,7 +6,7 @@
         },
         {
             "path": "/api/cron/rss-auto-publish",
-            "schedule": "0 12 * * *"
+            "schedule": "30 11 * * *"
         }
     ]
 }

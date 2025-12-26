@@ -224,6 +224,68 @@ export default function CalendarDashboard() {
           </div>
         )}
 
+        {/* Calendar & Analytics Sync Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {/* Calendar Sync */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold mb-4">📅 Calendar Sync</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Sync your scheduled posts to external calendars
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium flex items-center justify-center gap-2">
+                <span>🗓️</span> Google
+              </button>
+              <button className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium flex items-center justify-center gap-2">
+                <span>📅</span> Outlook
+              </button>
+              <button className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium flex items-center justify-center gap-2">
+                <span>🍎</span> Apple
+              </button>
+              <button className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium flex items-center justify-center gap-2">
+                <span>🟠</span> HubSpot
+              </button>
+              <button className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium flex items-center justify-center gap-2">
+                <span>📘</span> Meta
+              </button>
+              <button className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium flex items-center justify-center gap-2">
+                <span>💼</span> LinkedIn
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-3">
+              OAuth setup required for full integration
+            </p>
+          </div>
+
+          {/* Analytics Sync */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold mb-4">📊 Analytics Sync</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Import analytics from your social media platforms
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium flex items-center justify-center gap-2">
+                <span>📊</span> Google
+              </button>
+              <button className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium flex items-center justify-center gap-2">
+                <span>🟠</span> HubSpot
+              </button>
+              <button className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium flex items-center justify-center gap-2">
+                <span>📘</span> Meta
+              </button>
+              <button className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium flex items-center justify-center gap-2">
+                <span>💼</span> LinkedIn
+              </button>
+              <button className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium flex items-center justify-center gap-2">
+                <span>🐦</span> Twitter
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-3">
+              API setup required for data import
+            </p>
+          </div>
+        </div>
+
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="text-center">
             <FaCalendar className="text-6xl text-orange-500 mx-auto mb-4" />
