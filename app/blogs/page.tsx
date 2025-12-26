@@ -32,16 +32,12 @@ export default function BlogsPage() {
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [brands] = useState([
     { id: "all", name: "All Brands" },
-    { id: "ai", name: "AI (Account)" },
-    { id: "metaretail", name: "MetaRetail" },
-    { id: "consulting", name: "Consulting" },
-    { id: "sagesure", name: "SageSure" },
+    { id: "sagesure", name: "SageSure AI", blogBrand: "sagesure" },
+    { id: "maplesage", name: "MapleSage Blog", blogBrand: "maplesage" },
   ]);
-  const [rssFeeds, setRssFeeds] = useState<{[key: string]: string}>({
-    "ai": "https://blog.maplesage.com/rss.xml",
-    "metaretail": "",
-    "consulting": "",
-    "sagesure": "",
+  const [rssFeeds] = useState<{[key: string]: string}>({
+    "sagesure": "https://sagesure.io/ai-you-can-be-sure/rss.xml",
+    "maplesage": "https://blog.maplesage.com/rss.xml",
   });
   const [showFeedSettings, setShowFeedSettings] = useState(false);
 
@@ -84,9 +80,8 @@ export default function BlogsPage() {
     // Filter by brand if not "all"
     if (selectedBrand !== "all") {
       filtered = filtered.filter((blog) => {
-        const blogName = (blog.blogName || "").toLowerCase();
-        const brandName = brands.find(b => b.id === selectedBrand)?.name.toLowerCase() || "";
-        return blogName.includes(brandName) || blogName.includes(selectedBrand);
+        // Match by blogBrand field (for RSS feeds: "sagesure" or "maplesage")
+        return blog.blogBrand === selectedBrand;
       });
     }
 
@@ -283,13 +278,12 @@ export default function BlogsPage() {
                       onClick={async () => {
                         setSyncing(true);
                         try {
-                          const brandFeed = selectedBrand !== "all" ? rssFeeds[selectedBrand] : undefined;
+                          const blogFilter = selectedBrand !== "all" ? selectedBrand : undefined;
                           const response = await fetch("/api/blogs/sync-rss", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
-                              blogFilter: undefined,
-                              rssFeedUrl: brandFeed
+                              blogFilter: blogFilter
                             }),
                           });
                           const data = await response.json();
@@ -360,25 +354,19 @@ export default function BlogsPage() {
                 {/* RSS Feed Settings Panel */}
                 {showFeedSettings && (
                   <div className="mt-4 pt-4 border-t border-gray-200">
-                    <h3 className="text-sm font-medium text-gray-700 mb-3">RSS Feed URLs by Brand</h3>
-                    <div className="space-y-3">
+                    <h3 className="text-sm font-medium text-gray-700 mb-3">Configured RSS Feeds</h3>
+                    <div className="space-y-2">
                       {brands.filter(b => b.id !== "all").map((brand) => (
-                        <div key={brand.id} className="flex items-center gap-3">
-                          <label className="text-sm text-gray-600 w-32">{brand.name}:</label>
-                          <input
-                            type="url"
-                            value={rssFeeds[brand.id] || ""}
-                            onChange={(e) => setRssFeeds({ ...rssFeeds, [brand.id]: e.target.value })}
-                            placeholder="https://blog.example.com/rss.xml"
-                            className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm"
-                          />
+                        <div key={brand.id} className="flex items-center gap-3 text-sm">
+                          <span className="text-gray-600 w-32 font-medium">{brand.name}:</span>
+                          <span className="flex-1 text-gray-500">{rssFeeds[brand.id]}</span>
                         </div>
                       ))}
                     </div>
                     <div className="mt-3 text-xs text-gray-500">
-                      <p>• Configure RSS feed URLs for each brand</p>
-                      <p>• Click "Sync RSS Feeds" to import posts from the selected brand's feed</p>
-                      <p>• Leave blank if no RSS feed is available for that brand</p>
+                      <p>• RSS feeds are configured in lib/rss-feeds.ts</p>
+                      <p>• Select a brand and click "Sync RSS Feeds" to import posts from that feed</p>
+                      <p>• Click "Sync RSS Feeds" with "All Brands" to import from all feeds</p>
                     </div>
                   </div>
                 )}
