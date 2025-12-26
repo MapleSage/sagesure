@@ -102,7 +102,7 @@ export async function GET(req: NextRequest) {
 
         results.newPosts++;
 
-        // Auto-generate social media posts
+        // Auto-generate social media posts (HubSpot-style with summary)
         try {
           const socialResponse = await fetch(
             `${process.env.NEXTAUTH_URL || 'https://social.sagesure.io'}/api/ai/blog-to-social`,
@@ -113,7 +113,10 @@ export async function GET(req: NextRequest) {
               },
               body: JSON.stringify({
                 blogContent: blog.content,
-                count: 5, // Generate 5 social posts
+                count: 3, // Generate 3 social posts (like HubSpot)
+                blogTitle: blog.title,
+                blogUrl: blog.link,
+                summarize: true, // Use HubSpot-style summarization
               }),
             }
           );
@@ -122,21 +125,24 @@ export async function GET(req: NextRequest) {
             const socialData = await socialResponse.json();
             const posts = socialData.posts || [];
 
-            // Schedule posts for optimal times
-            const optimalTimes = [
-              { hour: 8, minute: 0 },   // 8:00 AM
-              { hour: 12, minute: 0 },  // 12:00 PM
-              { hour: 14, minute: 0 },  // 2:00 PM
-              { hour: 17, minute: 0 },  // 5:00 PM
-              { hour: 19, minute: 0 },  // 7:00 PM
-            ];
+            // Schedule posts HubSpot-style: 15 minutes after blog publish, spread over time
+            const blogPublishDate = new Date(blog.pubDate);
 
-            for (let i = 0; i < posts.length && i < optimalTimes.length; i++) {
-              const scheduleTime = new Date();
-              scheduleTime.setDate(scheduleTime.getDate() + Math.floor(i / 2)); // Spread over days
-              scheduleTime.setHours(optimalTimes[i].hour);
-              scheduleTime.setMinutes(optimalTimes[i].minute);
-              scheduleTime.setSeconds(0);
+            // Post 1: 15 minutes after blog (LinkedIn)
+            // Post 2: 1 hour after blog (Facebook/Twitter)
+            // Post 3: 3 hours after blog (Instagram)
+            const scheduleDelays = [15, 60, 180]; // minutes
+
+            for (let i = 0; i < posts.length && i < 3; i++) {
+              const scheduleTime = new Date(blogPublishDate);
+              scheduleTime.setMinutes(scheduleTime.getMinutes() + scheduleDelays[i]);
+
+              // Platform assignment (like HubSpot)
+              const platforms = i === 0
+                ? ["linkedin"] // Professional post goes to LinkedIn first
+                : i === 1
+                ? ["facebook", "twitter"] // Conversational to Facebook/Twitter
+                : ["instagram"]; // Visual to Instagram
 
               // Create scheduled post (ready to publish, not draft)
               await fetch(`${process.env.NEXTAUTH_URL || 'https://social.sagesure.io'}/api/posts/create`, {
@@ -147,7 +153,7 @@ export async function GET(req: NextRequest) {
                 body: JSON.stringify({
                   userId: DEFAULT_USER_ID,
                   content: posts[i],
-                  platforms: ["linkedin", "facebook", "twitter", "instagram"],
+                  platforms: platforms,
                   scheduledFor: scheduleTime.toISOString(),
                   isDraft: false, // Ready to publish automatically
                   mediaUrl: featuredImageUrl,
@@ -157,7 +163,7 @@ export async function GET(req: NextRequest) {
               results.socialPostsGenerated++;
             }
 
-            console.log(`[RSS Auto-Publish] Generated ${posts.length} social posts for: ${blog.title}`);
+            console.log(`[RSS Auto-Publish] Generated ${posts.length} social posts for: ${blog.title} (LinkedIn at +15min, FB/Twitter at +1hr, Instagram at +3hr)`);
           }
         } catch (socialError: any) {
           console.error(`[RSS Auto-Publish] Social generation error:`, socialError.message);

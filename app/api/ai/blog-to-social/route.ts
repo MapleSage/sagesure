@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   try {
     const userId = getUserId();
 
-    const { blogContent, count } = await req.json();
+    const { blogContent, count, blogTitle, blogUrl, summarize } = await req.json();
 
     if (!blogContent) {
       return NextResponse.json(
@@ -31,9 +31,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const postCount = count || 5;
+    const postCount = count || 3;
 
-    const systemPrompt = `You are a social media expert. Convert blog posts into engaging social media posts.
+    // If summarize is true, create HubSpot-style posts with title + summary + link
+    const systemPrompt = summarize
+      ? `You are a social media expert creating promotional posts for a blog article.
+
+The blog title is: "${blogTitle}"
+The blog URL is: ${blogUrl || "[LINK]"}
+
+Create ${postCount} different social media posts that:
+- Start with an engaging hook or question
+- Include a 1-2 sentence summary of the key insight
+- Reference the blog title naturally
+- End with "Read more: ${blogUrl || "[LINK]"}"
+- Are 200-280 characters total
+- Include 2-3 relevant hashtags at the end
+- Have platform-specific tone:
+  * LinkedIn: Professional, insightful
+  * Twitter/X: Concise, punchy
+  * Facebook: Conversational, engaging
+
+Return as JSON: {"posts": ["post1", "post2", "post3"]}`
+      : `You are a social media expert. Convert blog posts into engaging social media posts.
 
 Create ${postCount} different social media posts from the blog content. Each post should:
 - Be 150-280 characters
@@ -43,7 +63,7 @@ Create ${postCount} different social media posts from the blog content. Each pos
 - Be engaging and shareable
 - Include a call-to-action when appropriate
 
-Return as a JSON array of strings.`;
+Return as JSON: {"posts": ["post1", "post2", "post3"]}`;
 
     const completion = await client.chat.completions.create({
       model: process.env.AZURE_OPENAI_DEPLOYMENT_NAME || "gpt-4o",
@@ -55,7 +75,7 @@ Return as a JSON array of strings.`;
         },
       ],
       temperature: 0.8,
-      max_tokens: 1000,
+      max_tokens: 1500,
       response_format: { type: "json_object" },
     });
 
