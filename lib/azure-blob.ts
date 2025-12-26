@@ -1,4 +1,5 @@
 import { BlobServiceClient, ContainerClient } from "@azure/storage-blob";
+import { getCDNUrl } from "./azure-cdn";
 
 const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING!;
 const containerName = "user-media";
@@ -66,11 +67,18 @@ export async function uploadFile(
       },
     });
 
-    return blockBlobClient.url;
+    // Return CDN URL if enabled, otherwise return blob URL
+    const blobUrl = blockBlobClient.url;
+    return getCDNUrl(blobUrl);
   } catch (error) {
     console.error("Error uploading file:", error);
     throw error;
   }
+}
+
+// Convert existing blob URL to CDN URL
+export function convertToCDNUrl(blobUrl: string): string {
+  return getCDNUrl(blobUrl);
 }
 
 // Generate SAS URL for temporary access
@@ -78,9 +86,9 @@ export async function generateSasUrl(
   blobUrl: string,
   expiryMinutes: number = 60
 ): Promise<string> {
-  // For now, return the blob URL directly
+  // For now, return the blob URL directly (or CDN URL)
   // In production, implement SAS token generation
-  return blobUrl;
+  return getCDNUrl(blobUrl);
 }
 
 // Delete file from blob storage

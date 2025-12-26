@@ -1,4 +1,7 @@
 import { TableClient, AzureNamedKeyCredential } from "@azure/data-tables";
+import { getCachedToken, cacheToken, invalidateToken } from "./azure-redis";
+import { getCDNUrl } from "./azure-cdn";
+import { trackEvent, trackException } from "./azure-insights";
 
 const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING!;
 
@@ -178,12 +181,29 @@ export async function saveToken(
     updatedAt: new Date().toISOString(),
   };
   await tokensTable.upsertEntity(entity);
+
+  // Invalidate cache to ensure fresh data on next read
+  await invalidateToken(userId, platform);
+
+  // Track token save event
+  trackEvent('TokenSaved', {
+    userId,
+    platform,
+    hasRefreshToken: token.refreshToken ? 'true' : 'false',
+  });
 }
 
 export async function getToken(userId: string, platform: string) {
   try {
+    // Try Redis cache first
+    const cached = await getCachedToken(userId, platform);
+    if (cached) {
+      return cached;
+    }
+
+    // Cache miss - fetch from Azure Table Storage
     const entity = await tokensTable.getEntity(userId, platform);
-    return {
+    const tokenData = {
       accessToken: entity.accessToken as string,
       refreshToken: entity.refreshToken as string,
       expiresAt: entity.expiresAt as number,
@@ -193,8 +213,14 @@ export async function getToken(userId: string, platform: string) {
       organizationId: entity.organizationId as string,
       organizationName: entity.organizationName as string,
     };
+
+    // Cache for 1 hour (3600 seconds)
+    await cacheToken(userId, platform, tokenData, 3600);
+
+    return tokenData;
   } catch (error: any) {
     if (error.statusCode === 404) return null;
+    trackException(error as Error, { operation: 'getToken', userId, platform });
     throw error;
   }
 }

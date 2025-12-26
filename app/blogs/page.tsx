@@ -471,7 +471,6 @@ export default function BlogsPage() {
                         </div>
                       </div>
                     </div>
-                    </div>
                   </div>
                 ))}
               </div>

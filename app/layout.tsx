@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { initializeApp } from "@/lib/app-init";
+
+// Initialize Azure services
+initializeApp();
 
 export const metadata: Metadata = {
   title: "SageSure Social - Social Media Management",

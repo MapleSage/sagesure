@@ -14,7 +14,15 @@
  * - APP_INSIGHTS_ENABLED: Set to 'true' to enable monitoring
  */
 
-import * as appInsights from 'applicationinsights';
+// Only import on server-side
+let appInsights: typeof import('applicationinsights') | null = null;
+if (typeof window === 'undefined') {
+  try {
+    appInsights = require('applicationinsights');
+  } catch (error) {
+    console.warn('[App Insights] Module not available (optional dependency)');
+  }
+}
 
 const INSIGHTS_ENABLED = process.env.APP_INSIGHTS_ENABLED === 'true';
 const CONNECTION_STRING = process.env.APPLICATIONINSIGHTS_CONNECTION_STRING;
@@ -25,7 +33,7 @@ let isInitialized = false;
  * Initialize Application Insights
  */
 export function initializeAppInsights(): void {
-  if (!INSIGHTS_ENABLED || !CONNECTION_STRING || isInitialized) {
+  if (!INSIGHTS_ENABLED || !CONNECTION_STRING || isInitialized || !appInsights) {
     return;
   }
 
@@ -38,7 +46,6 @@ export function initializeAppInsights(): void {
       .setAutoCollectExceptions(true)
       .setAutoCollectDependencies(true)
       .setAutoCollectConsole(true, true)
-      .setUseDiskRetriesOnlyForInternalTelemetry(false)
       .setSendLiveMetrics(true)
       .setDistributedTracingMode(appInsights.DistributedTracingModes.AI_AND_W3C)
       .start();
@@ -62,7 +69,7 @@ export function trackEvent(
   properties?: { [key: string]: string },
   measurements?: { [key: string]: number }
 ): void {
-  if (!isInitialized) return;
+  if (!isInitialized || !appInsights) return;
 
   try {
     appInsights.defaultClient.trackEvent({
@@ -157,7 +164,7 @@ export function trackMetric(
   value: number,
   properties?: { [key: string]: string }
 ): void {
-  if (!isInitialized) return;
+  if (!isInitialized || !appInsights) return;
 
   try {
     appInsights.defaultClient.trackMetric({
@@ -194,15 +201,14 @@ export function trackResponseTime(
 export function trackException(
   error: Error,
   properties?: { [key: string]: string },
-  severityLevel?: appInsights.Contracts.SeverityLevel
+  severityLevel?: number
 ): void {
-  if (!isInitialized) return;
+  if (!isInitialized || !appInsights) return;
 
   try {
     appInsights.defaultClient.trackException({
       exception: error,
       properties,
-      severityLevel: severityLevel || appInsights.Contracts.SeverityLevel.Error,
     });
   } catch (err) {
     console.error('[App Insights] Track exception error:', err);
@@ -219,7 +225,7 @@ export function trackDependency(
   success: boolean,
   dependencyType?: string
 ): void {
-  if (!isInitialized) return;
+  if (!isInitialized || !appInsights) return;
 
   try {
     appInsights.defaultClient.trackDependency({
@@ -261,11 +267,12 @@ export function trackPageView(
   duration?: number,
   properties?: { [key: string]: string }
 ): void {
-  if (!isInitialized) return;
+  if (!isInitialized || !appInsights) return;
 
   try {
     appInsights.defaultClient.trackPageView({
       name,
+      id: url || name,
       url,
       duration,
       properties,
@@ -280,15 +287,14 @@ export function trackPageView(
  */
 export function trackTrace(
   message: string,
-  severityLevel?: appInsights.Contracts.SeverityLevel,
+  severityLevel?: number,
   properties?: { [key: string]: string }
 ): void {
-  if (!isInitialized) return;
+  if (!isInitialized || !appInsights) return;
 
   try {
     appInsights.defaultClient.trackTrace({
       message,
-      severityLevel: severityLevel || appInsights.Contracts.SeverityLevel.Information,
       properties,
     });
   } catch (error) {
@@ -300,16 +306,14 @@ export function trackTrace(
  * Flush all pending telemetry
  */
 export async function flushTelemetry(): Promise<void> {
-  if (!isInitialized) return;
+  if (!isInitialized || !appInsights) return;
 
-  return new Promise((resolve) => {
-    appInsights.defaultClient.flush({
-      callback: () => {
-        console.log('[App Insights] Telemetry flushed');
-        resolve();
-      },
-    });
-  });
+  try {
+    appInsights.defaultClient.flush();
+    console.log('[App Insights] Telemetry flushed');
+  } catch (error) {
+    console.error('[App Insights] Flush error:', error);
+  }
 }
 
 /**
