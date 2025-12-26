@@ -1052,45 +1052,58 @@ export default function Dashboard() {
         {activeTab === "settings" && (
           <div className="bg-white rounded-lg shadow">
             <div className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Connected Accounts</h2>
-              <div className="space-y-4">
-                {platforms.map((platform) => {
-                  const Icon = platform.icon;
-                  const isConnected = connectedPlatforms.includes(platform.id);
-                  return (
-                    <div
-                      key={platform.id}
-                      className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Icon className={`text-3xl ${platform.color}`} />
-                        <div>
-                          <div className="font-medium">{platform.name}</div>
-                          <div className="text-sm text-gray-500">
-                            {isConnected ? "Connected" : "Not connected"}
+              <h2 className="text-xl font-semibold mb-4">Settings</h2>
+              <p className="text-gray-600 mb-6">
+                Manage your connected accounts, publishing schedule, and email notifications
+              </p>
+              <button
+                onClick={() => router.push("/settings")}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                <FaCog />
+                Open Advanced Settings
+              </button>
+
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold mb-4">Quick Connect</h3>
+                <div className="space-y-4">
+                  {platforms.map((platform) => {
+                    const Icon = platform.icon;
+                    const isConnected = connectedPlatforms.includes(platform.id);
+                    return (
+                      <div
+                        key={platform.id}
+                        className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Icon className={`text-3xl ${platform.color}`} />
+                          <div>
+                            <div className="font-medium">{platform.name}</div>
+                            <div className="text-sm text-gray-500">
+                              {isConnected ? "Connected" : "Not connected"}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <button
-                        onClick={() => {
-                          if (!isConnected) {
-                            const oauthPlatform =
-                              platform.id === "instagram"
-                                ? "facebook"
-                                : platform.id;
-                            window.location.href = `/oauth/${oauthPlatform}/authorize`;
-                          }
-                        }}
-                        className={`px-4 py-2 rounded-lg ${isConnected
+                        <button
+                          onClick={() => {
+                            if (!isConnected) {
+                              const oauthPlatform =
+                                platform.id === "instagram"
+                                  ? "facebook"
+                                  : platform.id;
+                              window.location.href = `/oauth/${oauthPlatform}/authorize`;
+                            }
+                          }}
+                          className={`px-4 py-2 rounded-lg ${isConnected
                             ? "bg-green-100 text-green-700 cursor-default"
                             : "bg-orange-500 text-white hover:bg-orange-600"
                           }`}>
-                        {isConnected ? "Connected" : "Connect"}
-                      </button>
+                          {isConnected ? "Connected" : "Connect"}
+                        </button>
                     </div>
                   );
                 })}
               </div>
             </div>
+          </div>
           </div>
         )}
       </div>
