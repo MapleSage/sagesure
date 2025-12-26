@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FaFacebook, FaInstagram, FaSpinner } from "react-icons/fa";
 
-export default function SelectFacebookPage() {
+function SelectFacebookPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [pages, setPages] = useState<any[]>([]);
@@ -210,5 +210,20 @@ export default function SelectFacebookPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SelectFacebookPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <FaSpinner className="animate-spin text-4xl text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <SelectFacebookPageContent />
+    </Suspense>
   );
 }
