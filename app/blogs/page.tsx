@@ -90,10 +90,10 @@ export default function BlogsPage() {
       });
     }
 
-    // Sort by date
+    // Sort by date (use pubDate for RSS/HubSpot, createdAt for user-created)
     const sorted = [...filtered].sort((a, b) => {
-      const dateA = new Date(a.createdAt || a.publishDate || 0).getTime();
-      const dateB = new Date(b.createdAt || b.publishDate || 0).getTime();
+      const dateA = new Date(a.pubDate || a.publishDate || a.createdAt || 0).getTime();
+      const dateB = new Date(b.pubDate || b.publishDate || b.createdAt || 0).getTime();
       return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
     });
 
@@ -576,7 +576,7 @@ export default function BlogsPage() {
                             </button>
                           )}
                           <div className="text-xs text-gray-500">
-                            {new Date(blog.createdAt).toLocaleDateString()}
+                            {new Date(blog.pubDate || blog.createdAt).toLocaleDateString()}
                           </div>
                         </div>
                       </div>
