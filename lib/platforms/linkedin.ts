@@ -45,10 +45,68 @@ export async function postToLinkedIn(
       isReshareDisabledByAuthor: false,
     };
 
+    // Add image if provided
     if (imageUrl) {
-      // For now, just post text - image upload requires downloading and re-uploading
-      // which is complex. User can add images via URL in the post text
-      console.log("[LinkedIn] Image URL provided but not uploaded:", imageUrl);
+      console.log("[LinkedIn] Adding image to post:", imageUrl);
+
+      try {
+        // Download the image
+        const imageResponse = await axios.get(imageUrl, {
+          responseType: "arraybuffer",
+        });
+        const imageBuffer = Buffer.from(imageResponse.data);
+        const contentType = imageResponse.headers["content-type"] || "image/jpeg";
+
+        console.log("[LinkedIn] Image downloaded, size:", imageBuffer.length, "bytes");
+        console.log("[LinkedIn] Content type:", contentType);
+
+        // Step 1: Initialize upload
+        const initResponse = await axios.post(
+          "https://api.linkedin.com/rest/images?action=initializeUpload",
+          {
+            initializeUploadRequest: {
+              owner: author,
+            },
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+              "X-Restli-Protocol-Version": "2.0.0",
+              "LinkedIn-Version": "202411",
+            },
+          }
+        );
+
+        const uploadUrl = initResponse.data.value.uploadUrl;
+        const imageUrn = initResponse.data.value.image;
+        console.log("[LinkedIn] Upload initialized, URN:", imageUrn);
+
+        // Step 2: Upload the image
+        await axios.put(uploadUrl, imageBuffer, {
+          headers: {
+            "Content-Type": contentType,
+            Authorization: `Bearer ${accessToken}`,
+          },
+          maxBodyLength: Infinity,
+          maxContentLength: Infinity,
+        });
+
+        console.log("[LinkedIn] Image uploaded successfully");
+
+        // Step 3: Add image to post data
+        postData.content = {
+          media: {
+            id: imageUrn,
+          },
+        };
+
+        console.log("[LinkedIn] Image added to post data");
+      } catch (imageError: any) {
+        console.error("[LinkedIn] Image upload failed:", imageError.response?.data || imageError.message);
+        console.error("[LinkedIn] Continuing without image...");
+        // Continue posting without image rather than failing completely
+      }
     }
 
     console.log("[LinkedIn] Posting to LinkedIn API...");

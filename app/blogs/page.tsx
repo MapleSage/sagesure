@@ -350,15 +350,15 @@ export default function BlogsPage() {
                   </div>
                 </div>
 
-                <div className="grid gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {(showHubSpotBlogs ? hubspotBlogs : blogs)
                   .slice((currentPage - 1) * perPage, currentPage * perPage)
                   .map((blog) => (
                   <div
                     key={blog.id}
-                    className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden">
+                    className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden flex flex-col">
                     {blog.featuredImageUrl && (
-                      <div className="w-full h-48 overflow-hidden">
+                      <div className="w-full h-48 overflow-hidden flex-shrink-0">
                         <img
                           src={blog.featuredImageUrl}
                           alt={blog.title}
@@ -366,109 +366,108 @@ export default function BlogsPage() {
                         />
                       </div>
                     )}
-                    <div className="p-6">
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-xl font-bold text-gray-900">
-                              {blog.title}
-                            </h3>
-                            {blog.source === "rss" && (
-                              <span className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded">
-                                RSS
-                              </span>
-                            )}
-                            {blog.blogName && (
-                              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                                {blog.blogName}
-                              </span>
-                            )}
-                          </div>
-                        {blog.link && (
-                          <a
-                            href={blog.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-600 hover:underline">
-                            View Original →
-                          </a>
-                        )}
-                        {blog.hubspotUrl && (
-                          <a
-                            href={blog.hubspotUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-600 hover:underline">
-                            View on HubSpot →
-                          </a>
-                        )}
+                    <div className="p-4 flex-1 flex flex-col">
+                      <div className="mb-3">
+                        <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">
+                          {blog.title}
+                        </h3>
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {blog.source === "rss" && (
+                            <span className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded">
+                              RSS
+                            </span>
+                          )}
+                          {blog.blogName && (
+                            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                              {blog.blogName}
+                            </span>
+                          )}
+                          <span
+                            className={`text-xs px-2 py-1 rounded ${
+                              blog.status === "published"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}>
+                            {blog.status}
+                          </span>
+                        </div>
                         {blog.author && (
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-gray-500 mb-2">
                             By {blog.author}
                           </p>
                         )}
                       </div>
-                      <span
-                        className={`text-xs px-3 py-1 rounded ${
-                          blog.status === "published"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}>
-                        {blog.status}
-                      </span>
-                    </div>
-                    <p className="text-gray-600 mb-4">{blog.excerpt}</p>
-                    <div className="flex justify-between items-center">
-                      <div className="flex gap-2">
-                        {blog.tags?.map((tag: string) => (
-                          <span
-                            key={tag}
-                            className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                            #{tag}
-                          </span>
-                        ))}
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {showHubSpotBlogs && (
-                          <button
-                            onClick={async () => {
-                              setContent(blog.content);
-                              setGeneratingSocial(true);
-                              try {
-                                const response = await fetch(
-                                  "/api/ai/blog-to-social",
-                                  {
-                                    method: "POST",
-                                    headers: {
-                                      "Content-Type": "application/json",
-                                    },
-                                    body: JSON.stringify({
-                                      blogContent: blog.content,
-                                      count: 5,
-                                    }),
-                                  }
-                                );
-                                const data = await response.json();
-                                if (data.posts) {
-                                  alert(
-                                    `Generated ${data.posts.length} social posts! Check the dashboard to schedule them.`
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-3 flex-1">{blog.excerpt}</p>
+                      <div className="mt-auto pt-3 border-t border-gray-100">
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          {blog.tags?.slice(0, 3).map((tag: string) => (
+                            <span
+                              key={tag}
+                              className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          {blog.link && (
+                            <a
+                              href={blog.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:underline">
+                              View Original →
+                            </a>
+                          )}
+                          {blog.hubspotUrl && (
+                            <a
+                              href={blog.hubspotUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:underline">
+                              View on HubSpot →
+                            </a>
+                          )}
+                          {showHubSpotBlogs && (
+                            <button
+                              onClick={async () => {
+                                setContent(blog.content);
+                                setGeneratingSocial(true);
+                                try {
+                                  const response = await fetch(
+                                    "/api/ai/blog-to-social",
+                                    {
+                                      method: "POST",
+                                      headers: {
+                                        "Content-Type": "application/json",
+                                      },
+                                      body: JSON.stringify({
+                                        blogContent: blog.content,
+                                        count: 5,
+                                      }),
+                                    }
                                   );
+                                  const data = await response.json();
+                                  if (data.posts) {
+                                    alert(
+                                      `Generated ${data.posts.length} social posts! Check the dashboard to schedule them.`
+                                    );
+                                  }
+                                } catch (error) {
+                                  console.error(error);
+                                } finally {
+                                  setGeneratingSocial(false);
                                 }
-                              } catch (error) {
-                                console.error(error);
-                              } finally {
-                                setGeneratingSocial(false);
-                              }
-                            }}
-                            disabled={generatingSocial}
-                            className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:bg-gray-300">
-                            {generatingSocial
-                              ? "Generating..."
-                              : "Generate Social Posts"}
-                          </button>
-                        )}
-                        <div className="text-sm text-gray-500">
-                          {new Date(blog.createdAt).toLocaleDateString()}
+                              }}
+                              disabled={generatingSocial}
+                              className="text-xs bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 disabled:bg-gray-300">
+                              {generatingSocial
+                                ? "Generating..."
+                                : "Generate Social Posts"}
+                            </button>
+                          )}
+                          <div className="text-xs text-gray-500">
+                            {new Date(blog.createdAt).toLocaleDateString()}
+                          </div>
                         </div>
                       </div>
                     </div>
