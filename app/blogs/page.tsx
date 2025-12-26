@@ -28,6 +28,22 @@ export default function BlogsPage() {
   const [syncing, setSyncing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(25);
+  const [selectedBrand, setSelectedBrand] = useState<string>("all");
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
+  const [brands] = useState([
+    { id: "all", name: "All Brands" },
+    { id: "ai", name: "AI (Account)" },
+    { id: "metaretail", name: "MetaRetail" },
+    { id: "consulting", name: "Consulting" },
+    { id: "sagesure", name: "SageSure" },
+  ]);
+  const [rssFeeds, setRssFeeds] = useState<{[key: string]: string}>({
+    "ai": "https://blog.maplesage.com/rss.xml",
+    "metaretail": "",
+    "consulting": "",
+    "sagesure": "",
+  });
+  const [showFeedSettings, setShowFeedSettings] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -59,6 +75,29 @@ export default function BlogsPage() {
       .then((res) => res.json())
       .then((data) => setBlogs(data.blogs || []))
       .catch(console.error);
+  };
+
+  // Filter and sort blogs based on selected brand and sort order
+  const getFilteredAndSortedBlogs = () => {
+    let filtered = showHubSpotBlogs ? hubspotBlogs : blogs;
+
+    // Filter by brand if not "all"
+    if (selectedBrand !== "all") {
+      filtered = filtered.filter((blog) => {
+        const blogName = (blog.blogName || "").toLowerCase();
+        const brandName = brands.find(b => b.id === selectedBrand)?.name.toLowerCase() || "";
+        return blogName.includes(brandName) || blogName.includes(selectedBrand);
+      });
+    }
+
+    // Sort by date
+    const sorted = [...filtered].sort((a, b) => {
+      const dateA = new Date(a.createdAt || a.publishDate || 0).getTime();
+      const dateB = new Date(b.createdAt || b.publishDate || 0).getTime();
+      return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+    });
+
+    return sorted;
   };
 
   const syncHubSpotBlogs = () => {
@@ -216,63 +255,134 @@ export default function BlogsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {view === "list" && (
           <div>
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-2xl font-bold mb-2">Your Blog Posts</h2>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setShowHubSpotBlogs(false)}
-                    className={`px-4 py-2 rounded-lg text-sm ${
-                      !showHubSpotBlogs
-                        ? "bg-orange-500 text-white"
-                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                    }`}>
-                    Local Drafts
-                  </button>
-                  <button
-                    onClick={syncHubSpotBlogs}
-                    disabled={syncing}
-                    className={`px-4 py-2 rounded-lg text-sm ${
-                      showHubSpotBlogs
-                        ? "bg-orange-500 text-white"
-                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                    }`}>
-                    {syncing ? "Syncing..." : "HubSpot Blogs"}
-                  </button>
-                  <button
-                    onClick={async () => {
-                      setSyncing(true);
-                      try {
-                        const response = await fetch("/api/blogs/sync-rss", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ blogFilter: undefined }),
-                        });
-                        const data = await response.json();
-                        if (data.success) {
-                          alert(data.message);
-                          fetchBlogs();
-                        } else {
-                          alert(data.error || "Failed to sync RSS feeds");
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold mb-2">Your Blog Posts</h2>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowHubSpotBlogs(false)}
+                      className={`px-4 py-2 rounded-lg text-sm ${
+                        !showHubSpotBlogs
+                          ? "bg-orange-500 text-white"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      }`}>
+                      Local Drafts
+                    </button>
+                    <button
+                      onClick={syncHubSpotBlogs}
+                      disabled={syncing}
+                      className={`px-4 py-2 rounded-lg text-sm ${
+                        showHubSpotBlogs
+                          ? "bg-orange-500 text-white"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      }`}>
+                      {syncing ? "Syncing..." : "HubSpot Blogs"}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setSyncing(true);
+                        try {
+                          const brandFeed = selectedBrand !== "all" ? rssFeeds[selectedBrand] : undefined;
+                          const response = await fetch("/api/blogs/sync-rss", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              blogFilter: undefined,
+                              rssFeedUrl: brandFeed
+                            }),
+                          });
+                          const data = await response.json();
+                          if (data.success) {
+                            alert(data.message);
+                            fetchBlogs();
+                          } else {
+                            alert(data.error || "Failed to sync RSS feeds");
+                          }
+                        } catch (error) {
+                          console.error("RSS sync error:", error);
+                          alert("Failed to sync RSS feeds");
+                        } finally {
+                          setSyncing(false);
                         }
-                      } catch (error) {
-                        console.error("RSS sync error:", error);
-                        alert("Failed to sync RSS feeds");
-                      } finally {
-                        setSyncing(false);
-                      }
-                    }}
-                    disabled={syncing}
-                    className="px-4 py-2 rounded-lg text-sm bg-purple-500 text-white hover:bg-purple-600 disabled:bg-gray-300">
-                    {syncing ? "Syncing..." : "Sync RSS Feeds"}
+                      }}
+                      disabled={syncing}
+                      className="px-4 py-2 rounded-lg text-sm bg-purple-500 text-white hover:bg-purple-600 disabled:bg-gray-300">
+                      {syncing ? "Syncing..." : "Sync RSS Feeds"}
+                    </button>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setView("create")}
+                  className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 flex items-center gap-2">
+                  <FaMagic /> Create New Blog
+                </button>
+              </div>
+
+              {/* Filter and Sort Controls */}
+              <div className="bg-white rounded-lg shadow p-4">
+                <div className="flex flex-wrap gap-4 items-center">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700">Brand:</label>
+                    <select
+                      value={selectedBrand}
+                      onChange={(e) => {
+                        setSelectedBrand(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      className="border border-gray-300 rounded px-3 py-1.5 text-sm">
+                      {brands.map((brand) => (
+                        <option key={brand.id} value={brand.id}>
+                          {brand.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700">Sort:</label>
+                    <select
+                      value={sortOrder}
+                      onChange={(e) => setSortOrder(e.target.value as "desc" | "asc")}
+                      className="border border-gray-300 rounded px-3 py-1.5 text-sm">
+                      <option value="desc">Newest First</option>
+                      <option value="asc">Oldest First</option>
+                    </select>
+                  </div>
+
+                  <button
+                    onClick={() => setShowFeedSettings(!showFeedSettings)}
+                    className="ml-auto px-4 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50">
+                    {showFeedSettings ? "Hide" : "Manage"} RSS Feeds
                   </button>
                 </div>
+
+                {/* RSS Feed Settings Panel */}
+                {showFeedSettings && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h3 className="text-sm font-medium text-gray-700 mb-3">RSS Feed URLs by Brand</h3>
+                    <div className="space-y-3">
+                      {brands.filter(b => b.id !== "all").map((brand) => (
+                        <div key={brand.id} className="flex items-center gap-3">
+                          <label className="text-sm text-gray-600 w-32">{brand.name}:</label>
+                          <input
+                            type="url"
+                            value={rssFeeds[brand.id] || ""}
+                            onChange={(e) => setRssFeeds({ ...rssFeeds, [brand.id]: e.target.value })}
+                            placeholder="https://blog.example.com/rss.xml"
+                            className="flex-1 border border-gray-300 rounded px-3 py-1.5 text-sm"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-3 text-xs text-gray-500">
+                      <p>• Configure RSS feed URLs for each brand</p>
+                      <p>• Click "Sync RSS Feeds" to import posts from the selected brand's feed</p>
+                      <p>• Leave blank if no RSS feed is available for that brand</p>
+                    </div>
+                  </div>
+                )}
               </div>
-              <button
-                onClick={() => setView("create")}
-                className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 flex items-center gap-2">
-                <FaMagic /> Create New Blog
-              </button>
             </div>
 
             {!showHubSpotBlogs && blogs.length === 0 ? (
@@ -314,8 +424,8 @@ export default function BlogsPage() {
                       </div>
                       <div className="text-sm text-gray-600">
                         Showing {((currentPage - 1) * perPage) + 1} to{" "}
-                        {Math.min(currentPage * perPage, (showHubSpotBlogs ? hubspotBlogs : blogs).length)} of{" "}
-                        {(showHubSpotBlogs ? hubspotBlogs : blogs).length} blogs
+                        {Math.min(currentPage * perPage, getFilteredAndSortedBlogs().length)} of{" "}
+                        {getFilteredAndSortedBlogs().length} blogs
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -332,17 +442,17 @@ export default function BlogsPage() {
                         Prev
                       </button>
                       <span className="px-3 py-1 text-sm">
-                        Page {currentPage} of {Math.ceil((showHubSpotBlogs ? hubspotBlogs : blogs).length / perPage)}
+                        Page {currentPage} of {Math.ceil(getFilteredAndSortedBlogs().length / perPage)}
                       </span>
                       <button
                         onClick={() => setCurrentPage(currentPage + 1)}
-                        disabled={currentPage >= Math.ceil((showHubSpotBlogs ? hubspotBlogs : blogs).length / perPage)}
+                        disabled={currentPage >= Math.ceil(getFilteredAndSortedBlogs().length / perPage)}
                         className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
                         Next
                       </button>
                       <button
-                        onClick={() => setCurrentPage(Math.ceil((showHubSpotBlogs ? hubspotBlogs : blogs).length / perPage))}
-                        disabled={currentPage >= Math.ceil((showHubSpotBlogs ? hubspotBlogs : blogs).length / perPage)}
+                        onClick={() => setCurrentPage(Math.ceil(getFilteredAndSortedBlogs().length / perPage))}
+                        disabled={currentPage >= Math.ceil(getFilteredAndSortedBlogs().length / perPage)}
                         className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
                         Last
                       </button>
@@ -351,7 +461,7 @@ export default function BlogsPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {(showHubSpotBlogs ? hubspotBlogs : blogs)
+                {getFilteredAndSortedBlogs()
                   .slice((currentPage - 1) * perPage, currentPage * perPage)
                   .map((blog) => (
                   <div
@@ -480,8 +590,8 @@ export default function BlogsPage() {
                 <div className="flex justify-between items-center">
                   <div className="text-sm text-gray-600">
                     Showing {((currentPage - 1) * perPage) + 1} to{" "}
-                    {Math.min(currentPage * perPage, (showHubSpotBlogs ? hubspotBlogs : blogs).length)} of{" "}
-                    {(showHubSpotBlogs ? hubspotBlogs : blogs).length} blogs
+                    {Math.min(currentPage * perPage, getFilteredAndSortedBlogs().length)} of{" "}
+                    {getFilteredAndSortedBlogs().length} blogs
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -497,17 +607,17 @@ export default function BlogsPage() {
                       Prev
                     </button>
                     <span className="px-3 py-1 text-sm">
-                      Page {currentPage} of {Math.ceil((showHubSpotBlogs ? hubspotBlogs : blogs).length / perPage)}
+                      Page {currentPage} of {Math.ceil(getFilteredAndSortedBlogs().length / perPage)}
                     </span>
                     <button
                       onClick={() => setCurrentPage(currentPage + 1)}
-                      disabled={currentPage >= Math.ceil((showHubSpotBlogs ? hubspotBlogs : blogs).length / perPage)}
+                      disabled={currentPage >= Math.ceil(getFilteredAndSortedBlogs().length / perPage)}
                       className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
                       Next
                     </button>
                     <button
-                      onClick={() => setCurrentPage(Math.ceil((showHubSpotBlogs ? hubspotBlogs : blogs).length / perPage))}
-                      disabled={currentPage >= Math.ceil((showHubSpotBlogs ? hubspotBlogs : blogs).length / perPage)}
+                      onClick={() => setCurrentPage(Math.ceil(getFilteredAndSortedBlogs().length / perPage))}
+                      disabled={currentPage >= Math.ceil(getFilteredAndSortedBlogs().length / perPage)}
                       className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
                       Last
                     </button>
