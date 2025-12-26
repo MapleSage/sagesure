@@ -115,7 +115,8 @@ export async function POST(req: NextRequest) {
             result = await postToLinkedIn(
               tokenData.accessToken,
               platformText,
-              platformMedia
+              platformMedia,
+              tokenData.organizationId
             );
             break;
           case "facebook":

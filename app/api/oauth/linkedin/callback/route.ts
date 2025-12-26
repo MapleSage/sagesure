@@ -49,10 +49,16 @@ export async function GET(req: NextRequest) {
     const tokenData = await exchangeLinkedInCode(code, redirectUri);
     console.log("[LinkedIn Callback] Token received, saving...");
 
+    // Save token with organization ID from environment
+    const organizationId = process.env.LINKEDIN_ORGANIZATION_ID;
+    console.log("[LinkedIn Callback] Organization ID:", organizationId);
+
     await saveToken(userId, "linkedin", {
       accessToken: tokenData.access_token,
       refreshToken: tokenData.refresh_token,
       expiresAt: Date.now() + tokenData.expires_in * 1000,
+      organizationId: organizationId,
+      organizationName: "SageSure AI",
     });
 
     console.log("[LinkedIn Callback] Success! Redirecting to dashboard");

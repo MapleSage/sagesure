@@ -160,6 +160,8 @@ export async function saveToken(
     pageId?: string;
     pageName?: string;
     instagramAccountId?: string;
+    organizationId?: string;
+    organizationName?: string;
   }
 ) {
   const entity = {
@@ -171,6 +173,8 @@ export async function saveToken(
     pageId: token.pageId || "",
     pageName: token.pageName || "",
     instagramAccountId: token.instagramAccountId || "",
+    organizationId: token.organizationId || "",
+    organizationName: token.organizationName || "",
     updatedAt: new Date().toISOString(),
   };
   await tokensTable.upsertEntity(entity);
@@ -186,6 +190,8 @@ export async function getToken(userId: string, platform: string) {
       pageId: entity.pageId as string,
       pageName: entity.pageName as string,
       instagramAccountId: entity.instagramAccountId as string,
+      organizationId: entity.organizationId as string,
+      organizationName: entity.organizationName as string,
     };
   } catch (error: any) {
     if (error.statusCode === 404) return null;

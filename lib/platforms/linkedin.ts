@@ -3,26 +3,37 @@ import axios from "axios";
 export async function postToLinkedIn(
   accessToken: string,
   content: string,
-  imageUrl?: string
+  imageUrl?: string,
+  organizationId?: string
 ) {
   try {
     console.log("[LinkedIn] Starting post to LinkedIn...");
     console.log("[LinkedIn] Content length:", content.length);
+    console.log("[LinkedIn] Organization ID:", organizationId);
 
-    // Get user profile
-    console.log("[LinkedIn] Fetching user profile...");
-    const profileResponse = await axios.get(
-      "https://api.linkedin.com/v2/userinfo",
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      }
-    );
-    const userId = profileResponse.data.sub;
-    console.log("[LinkedIn] User ID:", userId);
+    let author: string;
+
+    if (organizationId) {
+      // Post to organization page
+      author = `urn:li:organization:${organizationId}`;
+      console.log("[LinkedIn] Posting to organization:", author);
+    } else {
+      // Post to personal profile (fallback)
+      console.log("[LinkedIn] Fetching user profile...");
+      const profileResponse = await axios.get(
+        "https://api.linkedin.com/v2/userinfo",
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
+      const userId = profileResponse.data.sub;
+      author = `urn:li:person:${userId}`;
+      console.log("[LinkedIn] Posting to personal profile:", author);
+    }
 
     // Create post using new API
     const postData: any = {
-      author: `urn:li:person:${userId}`,
+      author: author,
       commentary: content,
       visibility: "PUBLIC",
       distribution: {
