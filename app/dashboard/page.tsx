@@ -16,9 +16,11 @@ import {
   FaBlog,
   FaImage,
   FaTimes,
+  FaChartLine,
 } from "react-icons/fa";
 import MediaLibraryModal from "../components/MediaLibraryModal";
 import BlogSelector from "../components/BlogSelector";
+import AnalyticsDashboard from "../components/AnalyticsDashboard";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -33,7 +35,7 @@ export default function Dashboard() {
   const [posting, setPosting] = useState(false);
   const [connectedPlatforms, setConnectedPlatforms] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<
-    "create" | "drafts" | "history" | "settings"
+    "create" | "drafts" | "history" | "analytics" | "settings"
   >("create");
   const [posts, setPosts] = useState<any[]>([]);
   const [aiPrompt, setAiPrompt] = useState("");
@@ -457,6 +459,14 @@ export default function Dashboard() {
                   : "border-transparent text-gray-500 hover:text-gray-700"
                 }`}>
               <FaHistory /> Posts History
+            </button>
+            <button
+              onClick={() => setActiveTab("analytics")}
+              className={`pb-4 px-2 border-b-2 font-medium text-sm flex items-center gap-2 ${activeTab === "analytics"
+                  ? "border-orange-500 text-orange-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}>
+              <FaChartLine /> Analytics
             </button>
             <button
               onClick={() => router.push("/blogs")}
@@ -937,6 +947,12 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {activeTab === "analytics" && (
+          <div>
+            <AnalyticsDashboard />
           </div>
         )}
 
