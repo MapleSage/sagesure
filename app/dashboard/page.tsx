@@ -17,10 +17,12 @@ import {
   FaImage,
   FaTimes,
   FaChartLine,
+  FaCalendar,
 } from "react-icons/fa";
 import MediaLibraryModal from "../components/MediaLibraryModal";
 import BlogSelector from "../components/BlogSelector";
 import AnalyticsDashboard from "../components/AnalyticsDashboard";
+import ContentCalendar from "../components/ContentCalendar";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -35,7 +37,7 @@ export default function Dashboard() {
   const [posting, setPosting] = useState(false);
   const [connectedPlatforms, setConnectedPlatforms] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<
-    "create" | "drafts" | "history" | "analytics" | "settings"
+    "create" | "drafts" | "history" | "analytics" | "calendar" | "settings"
   >("create");
   const [posts, setPosts] = useState<any[]>([]);
   const [aiPrompt, setAiPrompt] = useState("");
@@ -469,14 +471,17 @@ export default function Dashboard() {
               <FaChartLine /> Analytics
             </button>
             <button
+              onClick={() => setActiveTab("calendar")}
+              className={`pb-4 px-2 border-b-2 font-medium text-sm flex items-center gap-2 ${activeTab === "calendar"
+                  ? "border-orange-500 text-orange-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}>
+              <FaCalendar /> Calendar
+            </button>
+            <button
               onClick={() => router.push("/blogs")}
               className="pb-4 px-2 border-b-2 border-transparent font-medium text-sm flex items-center gap-2 text-gray-500 hover:text-gray-700">
               <FaBlog /> Blogs
-            </button>
-            <button
-              onClick={() => router.push("/calendar")}
-              className="pb-4 px-2 border-b-2 border-transparent font-medium text-sm flex items-center gap-2 text-gray-500 hover:text-gray-700">
-              <FaHistory /> Calendar Events
             </button>
             <button
               onClick={() => setActiveTab("settings")}
@@ -953,6 +958,34 @@ export default function Dashboard() {
         {activeTab === "analytics" && (
           <div>
             <AnalyticsDashboard />
+          </div>
+        )}
+
+        {activeTab === "calendar" && (
+          <div>
+            <ContentCalendar
+              onCreatePost={(date) => {
+                setActiveTab("create");
+                const dateStr = date.toISOString().split("T")[0];
+                setScheduledDate(dateStr);
+                setScheduledTime("09:00");
+                setIsScheduled(true);
+              }}
+              onEditPost={(post) => {
+                // Load the post for editing
+                setContent(post.content);
+                setSelectedPlatforms(post.platforms);
+                if (post.scheduledFor) {
+                  const scheduled = new Date(post.scheduledFor);
+                  setScheduledDate(scheduled.toISOString().split("T")[0]);
+                  setScheduledTime(
+                    scheduled.toTimeString().substring(0, 5)
+                  );
+                  setIsScheduled(true);
+                }
+                setActiveTab("create");
+              }}
+            />
           </div>
         )}
 
