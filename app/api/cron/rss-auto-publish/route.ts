@@ -11,7 +11,7 @@ import { getFailedHubSpotSocialPosts } from "@/lib/hubspot-social";
  * 1. Checks RSS feeds for new blog posts
  * 2. Generates social media posts from new blog content
  * 3. Schedules them for optimal posting times
- * 4. **THE ORIGINAL PURPOSE**: Retries failed HubSpot social posts from Dec 15+
+ * 4. **THE ORIGINAL PURPOSE**: Retries failed HubSpot social posts from Dec 15, 2024+
  *
  * Runs daily at 11:30 AM UTC (4:00 PM Dubai)
  * Configured in vercel.json

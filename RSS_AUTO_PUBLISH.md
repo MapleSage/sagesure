@@ -71,7 +71,7 @@ The RSS Auto-Publish cron job now does TWO things:
 - Schedules them for optimal posting times
 
 **Part 2: Retry Failed HubSpot Posts - THE ORIGINAL PURPOSE**
-This addresses the **original purpose** of the app: **publishing posts that failed in HubSpot due to quota limits or errors since Dec 15, 2024**.
+This addresses the **original purpose** of the app: **publishing posts that failed in HubSpot due to quota limits or errors since Dec 15, 2024** (not 2025!).
 
 It fetches blog posts from HubSpot that have:
 - Failed social media publishing attempts
