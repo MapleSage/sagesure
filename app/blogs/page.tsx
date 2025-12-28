@@ -40,6 +40,9 @@ export default function BlogsPage() {
     "maplesage": "https://blog.maplesage.com/rss.xml",
   });
   const [showFeedSettings, setShowFeedSettings] = useState(false);
+  const [showUnsuccessfulPosts, setShowUnsuccessfulPosts] = useState(false);
+  const [unsuccessfulPosts, setUnsuccessfulPosts] = useState<any[]>([]);
+  const [fetchingUnsuccessful, setFetchingUnsuccessful] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -256,9 +259,12 @@ export default function BlogsPage() {
                   <h2 className="text-2xl font-bold mb-2">Your Blog Posts</h2>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setShowHubSpotBlogs(false)}
+                      onClick={() => {
+                        setShowHubSpotBlogs(false);
+                        setShowUnsuccessfulPosts(false);
+                      }}
                       className={`px-4 py-2 rounded-lg text-sm ${
-                        !showHubSpotBlogs
+                        !showHubSpotBlogs && !showUnsuccessfulPosts
                           ? "bg-orange-500 text-white"
                           : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                       }`}>
@@ -303,6 +309,34 @@ export default function BlogsPage() {
                       disabled={syncing}
                       className="px-4 py-2 rounded-lg text-sm bg-purple-500 text-white hover:bg-purple-600 disabled:bg-gray-300">
                       {syncing ? "Syncing..." : "Sync RSS Feeds"}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setFetchingUnsuccessful(true);
+                        setShowUnsuccessfulPosts(true);
+                        setShowHubSpotBlogs(false);
+                        try {
+                          const response = await fetch("/api/test-hubspot-failed");
+                          const data = await response.json();
+                          if (data.success) {
+                            setUnsuccessfulPosts(data.posts || []);
+                          } else {
+                            alert("Failed to fetch unsuccessful posts");
+                          }
+                        } catch (error) {
+                          console.error("Fetch unsuccessful posts error:", error);
+                          alert("Failed to fetch unsuccessful posts");
+                        } finally {
+                          setFetchingUnsuccessful(false);
+                        }
+                      }}
+                      disabled={fetchingUnsuccessful}
+                      className={`px-4 py-2 rounded-lg text-sm ${
+                        showUnsuccessfulPosts
+                          ? "bg-red-500 text-white"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      } disabled:bg-gray-300`}>
+                      {fetchingUnsuccessful ? "Loading..." : `Unsuccessful (72)`}
                     </button>
                   </div>
                 </div>
@@ -448,7 +482,77 @@ export default function BlogsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Unsuccessful Posts View */}
+                {showUnsuccessfulPosts ? (
+                  <div className="space-y-4">
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                      <p className="text-red-800">
+                        <strong>{unsuccessfulPosts.length} posts</strong> from RSS feeds need social publishing (published since Dec 15, 2024)
+                      </p>
+                    </div>
+
+                    {unsuccessfulPosts.length === 0 ? (
+                      <div className="text-center py-12 text-gray-500">
+                        No unsuccessful posts found. All caught up!
+                      </div>
+                    ) : (
+                      unsuccessfulPosts.map((post, index) => (
+                        <div key={index} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-gray-900 mb-1">{post.blogTitle}</h3>
+                              <p className="text-sm text-gray-600 mb-2">{post.socialContent?.substring(0, 150)}...</p>
+                              <div className="flex gap-2 items-center text-xs text-gray-500">
+                                <span className="bg-red-100 text-red-800 px-2 py-1 rounded">
+                                  {post.failureReason}
+                                </span>
+                                <span>{new Date(post.publishDate).toLocaleDateString()}</span>
+                                {post.blogUrl && (
+                                  <a href={post.blogUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                    View Post →
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              onClick={async () => {
+                                if (confirm('Schedule this post for social publishing?')) {
+                                  try {
+                                    const response = await fetch('/api/posts/create', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        content: post.socialContent,
+                                        platforms: post.failedPlatforms,
+                                        scheduledFor: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes from now
+                                        status: 'scheduled',
+                                        imageUrl: post.featuredImage,
+                                      }),
+                                    });
+                                    const data = await response.json();
+                                    if (data.success) {
+                                      alert('Post scheduled for publishing!');
+                                      // Remove from unsuccessful list
+                                      setUnsuccessfulPosts(unsuccessfulPosts.filter((_, i) => i !== index));
+                                    } else {
+                                      alert('Failed to schedule post');
+                                    }
+                                  } catch (error) {
+                                    console.error('Schedule error:', error);
+                                    alert('Failed to schedule post');
+                                  }
+                                }
+                              }}
+                              className="ml-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm whitespace-nowrap">
+                              Retry Publishing
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {getFilteredAndSortedBlogs()
                   .slice((currentPage - 1) * perPage, currentPage * perPage)
                   .map((blog) => (
@@ -572,8 +676,10 @@ export default function BlogsPage() {
                   </div>
                 ))}
               </div>
+                )}
 
               {/* Pagination Controls - Bottom */}
+              {!showUnsuccessfulPosts && (
               <div className="bg-white rounded-lg shadow p-4 mt-4">
                 <div className="flex justify-between items-center">
                   <div className="text-sm text-gray-600">
@@ -612,6 +718,7 @@ export default function BlogsPage() {
                   </div>
                 </div>
               </div>
+              )}
             </>
             )}
           </div>
