@@ -33,6 +33,7 @@ export async function GET(req: NextRequest) {
     }
 
     console.log("[RSS Auto-Publish] Starting RSS auto-publish check");
+    const startTime = new Date().toISOString();
 
     // Fetch all RSS feeds
     const rssBlogs = await fetchAllRSSFeeds();
@@ -197,6 +198,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: `Processed ${results.newPosts} new blog posts`,
+      executedAt: startTime,
+      totalBlogsChecked: rssBlogs.length,
+      newPostsFound: results.newPosts,
+      socialPostsGenerated: results.socialPostsGenerated,
       results,
     });
   } catch (error: any) {

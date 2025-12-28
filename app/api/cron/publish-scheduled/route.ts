@@ -42,9 +42,11 @@ export async function GET(req: NextRequest) {
     }
 
     console.log("[CRON] Starting scheduled posts check...");
+    const startTime = new Date().toISOString();
 
     const now = new Date();
     const results = [];
+    let totalChecked = 0;
 
     // Get all scheduled posts
     const entities = postsTable.listEntities({
@@ -52,6 +54,7 @@ export async function GET(req: NextRequest) {
     });
 
     for await (const entity of entities) {
+      totalChecked++;
       const scheduledFor = new Date(entity.scheduledFor as string);
 
       // Check if it's time to publish
@@ -175,6 +178,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      executedAt: startTime,
+      totalScheduledPostsChecked: totalChecked,
       processed: results.length,
       results,
     });
