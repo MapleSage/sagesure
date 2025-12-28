@@ -7,10 +7,6 @@
         {
             "path": "/api/cron/rss-auto-publish",
             "schedule": "30 11 * * *"
-        },
-        {
-            "path": "/api/cron/retry-failed-social",
-            "schedule": "0 6 * * *"
         }
     ]
 }

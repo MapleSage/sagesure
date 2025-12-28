@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchAllRSSFeeds } from "@/lib/rss-feeds";
-import { getBlogByRssId, saveBlog } from "@/lib/azure-storage";
+import { getBlogByRssId, saveBlog, savePost } from "@/lib/azure-storage";
 import { uploadFile, ensureContainerExists } from "@/lib/azure-blob";
+import { getFailedHubSpotSocialPosts } from "@/lib/hubspot-social";
 
 /**
- * RSS Auto-Publish Cron Job
+ * RSS Auto-Publish & Retry Failed Posts Cron Job
  *
  * This endpoint automatically:
- * 1. Checks RSS feeds for new posts
+ * 1. Checks RSS feeds for new blog posts
  * 2. Generates social media posts from new blog content
  * 3. Schedules them for optimal posting times
+ * 4. **THE ORIGINAL PURPOSE**: Retries failed HubSpot social posts from Dec 15+
  *
- * Should be called via Vercel Cron (every 30 minutes)
+ * Runs daily at 11:30 AM UTC (4:00 PM Dubai)
  * Configured in vercel.json
  */
 
@@ -42,6 +44,7 @@ export async function GET(req: NextRequest) {
     const results = {
       newPosts: 0,
       socialPostsGenerated: 0,
+      failedPostsRetried: 0,
       errors: [] as any[],
     };
 
@@ -189,19 +192,65 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // PART 2: Retry failed HubSpot social posts (THE ORIGINAL PURPOSE)
+    console.log("[RSS Auto-Publish] Starting HubSpot failed posts retry...");
+
+    try {
+      const failedPosts = await getFailedHubSpotSocialPosts();
+      console.log(`[RSS Auto-Publish] Found ${failedPosts.length} failed HubSpot posts`);
+
+      for (const post of failedPosts) {
+        try {
+          const failedPlatforms = post.failedPlatforms || ["linkedin", "facebook", "twitter"];
+          const scheduleTime = new Date();
+          scheduleTime.setMinutes(scheduleTime.getMinutes() + 5);
+
+          const postContent = post.socialContent || `${post.blogTitle}\n\n${post.blogUrl}`;
+
+          await savePost({
+            userId: DEFAULT_USER_ID,
+            content: postContent,
+            platforms: failedPlatforms,
+            scheduledFor: scheduleTime.toISOString(),
+            status: "scheduled",
+            imageUrl: post.featuredImage,
+          });
+
+          results.failedPostsRetried++;
+          console.log(`[RSS Auto-Publish] Scheduled retry for: ${post.blogTitle}`);
+
+        } catch (error: any) {
+          console.error(`[RSS Auto-Publish] Error retrying ${post.blogId}:`, error);
+          results.errors.push({
+            type: "hubspot-retry",
+            blogId: post.blogId,
+            error: error.message,
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error("[RSS Auto-Publish] HubSpot retry error:", error);
+      results.errors.push({
+        type: "hubspot-fetch",
+        error: error.message,
+      });
+    }
+
     console.log(
       `[RSS Auto-Publish] Complete - New posts: ${results.newPosts}, ` +
       `Social posts generated: ${results.socialPostsGenerated}, ` +
+      `Failed posts retried: ${results.failedPostsRetried}, ` +
       `Errors: ${results.errors.length}`
     );
 
     return NextResponse.json({
       success: true,
-      message: `Processed ${results.newPosts} new blog posts`,
+      message: `Processed ${results.newPosts} new blog posts and retried ${results.failedPostsRetried} failed posts`,
       executedAt: startTime,
       totalBlogsChecked: rssBlogs.length,
       newPostsFound: results.newPosts,
       socialPostsGenerated: results.socialPostsGenerated,
+      failedPostsRetried: results.failedPostsRetried,
       results,
     });
   } catch (error: any) {
