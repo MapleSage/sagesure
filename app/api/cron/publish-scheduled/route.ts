@@ -29,9 +29,15 @@ const postsTable = new TableClient(
 
 export async function GET(req: NextRequest) {
   try {
-    // Verify cron secret to prevent unauthorized access
+    // Verify this is a legitimate Vercel cron job
     const authHeader = req.headers.get("authorization");
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    const vercelCron = req.headers.get("x-vercel-cron");
+
+    // Allow either Vercel cron header OR Bearer token (for manual testing)
+    const isVercelCron = vercelCron !== null;
+    const isAuthorized = authHeader === `Bearer ${process.env.CRON_SECRET}`;
+
+    if (!isVercelCron && !isAuthorized) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

@@ -19,10 +19,15 @@ const DEFAULT_USER_ID = "info@sagesure.io"; // Default user for auto-publishing
 
 export async function GET(req: NextRequest) {
   try {
+    // Verify this is a legitimate Vercel cron job
     const authHeader = req.headers.get("authorization");
+    const vercelCron = req.headers.get("x-vercel-cron");
 
-    // Verify cron secret for security
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    // Allow either Vercel cron header OR Bearer token (for manual testing)
+    const isVercelCron = vercelCron !== null;
+    const isAuthorized = authHeader === `Bearer ${process.env.CRON_SECRET}`;
+
+    if (!isVercelCron && !isAuthorized) {
       console.log("[RSS Auto-Publish] Unauthorized request");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
