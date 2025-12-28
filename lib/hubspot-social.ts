@@ -79,61 +79,61 @@ function extractUrl(text: string): string {
 }
 
 /**
- * Fallback method: Fetch recent blog posts from HubSpot
- * and assume they need social media publishing
+ * Fallback method: Use RSS feeds to get all blog posts that need social publishing
+ * This is more reliable than the HubSpot API
  */
 async function getFallbackBlogPostsForSocial() {
   try {
-    if (!hubspotClient) {
-      return [];
-    }
+    console.log("[HubSpot Social] Using RSS fallback: Fetching from RSS feeds...");
 
-    console.log("[HubSpot Social] Using fallback: Fetching recent blog posts...");
+    // Import RSS feeds function
+    const { fetchAllRSSFeeds } = require("@/lib/rss-feeds");
+    const { getBlogByRssId } = require("@/lib/azure-storage");
+
+    const rssBlogs = await fetchAllRSSFeeds();
+    console.log(`[HubSpot Social] Found ${rssBlogs.length} posts in RSS feeds`);
 
     const cutoffDate = new Date("2024-12-15T00:00:00Z");
+    const postsNeedingSocial = [];
 
-    // Fetch recent published blog posts
-    const response: any = await hubspotClient.apiRequest({
-      method: "GET",
-      path: `/cms/v3/blogs/posts`,
-      qs: {
-        limit: 50,
-        state: "PUBLISHED",
-        orderBy: "-publishDate",
-      },
-    });
+    // Check each RSS post to see if it needs social publishing
+    for (const blog of rssBlogs) {
+      try {
+        const pubDate = new Date(blog.pubDate);
 
-    console.log(`[HubSpot Social] Found ${response.results?.length || 0} recent blog posts`);
+        // Only process posts from Dec 15, 2024 onwards
+        if (pubDate < cutoffDate) {
+          continue;
+        }
 
-    if (!response.results || response.results.length === 0) {
-      return [];
+        // Check if this blog already exists in our system
+        const existingBlog = await getBlogByRssId("info@sagesure.io", blog.id);
+
+        // If it doesn't exist in our system, it needs to be processed for social
+        if (!existingBlog) {
+          postsNeedingSocial.push({
+            blogId: blog.id,
+            blogTitle: blog.title,
+            blogUrl: blog.link,
+            socialContent: `${blog.title}\n\n${blog.excerpt || ""}\n\nRead more: ${blog.link}`,
+            featuredImage: blog.featuredImage || "",
+            publishDate: blog.pubDate,
+            failedPlatforms: ["linkedin", "facebook", "twitter"],
+            failureReason: "RSS post needs social publishing",
+            rssId: blog.id,
+            retryAttempts: 0,
+          });
+        }
+      } catch (err) {
+        console.error(`[HubSpot Social] Error processing blog ${blog.id}:`, err);
+      }
     }
 
-    // Filter posts published after Dec 15
-    const recentPosts = response.results
-      .filter((post: any) => {
-        const publishDate = new Date(post.publishDate);
-        return publishDate >= cutoffDate;
-      })
-      .map((post: any) => ({
-        blogId: post.id,
-        blogTitle: post.name || post.htmlTitle || "Untitled Post",
-        blogUrl: post.url || "",
-        socialContent: `${post.name}\n\n${post.metaDescription || ""}\n\nRead more: ${post.url}`,
-        featuredImage: post.featuredImage || "",
-        publishDate: post.publishDate,
-        // Assume all platforms need publishing
-        failedPlatforms: ["linkedin", "facebook", "twitter"],
-        failureReason: "Not published to social media or quota exceeded",
-        hubspotBlogId: post.id,
-        retryAttempts: 0,
-      }));
-
-    console.log(`[HubSpot Social] Returning ${recentPosts.length} blog posts for social publishing`);
-    return recentPosts;
+    console.log(`[HubSpot Social] Found ${postsNeedingSocial.length} RSS posts needing social publishing`);
+    return postsNeedingSocial;
 
   } catch (error: any) {
-    console.error("[HubSpot Social] Fallback error:", error.message);
+    console.error("[HubSpot Social] RSS fallback error:", error.message);
     return [];
   }
 }
