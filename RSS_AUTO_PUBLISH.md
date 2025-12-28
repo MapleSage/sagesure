@@ -57,9 +57,22 @@ Auto-Publish at Scheduled Times
 ## Cron Schedule
 
 - **RSS Monitor**: Daily at 11:30 AM UTC / 4:00 PM Dubai time (`30 11 * * *`)
-- **Post Publisher**: Daily at midnight UTC (`0 0 * * *`)
+- **Post Publisher**: Daily at midnight UTC / 4:00 AM Dubai (`0 0 * * *`)
+- **Retry Failed Social Posts**: Daily at 6:00 AM UTC / 10:00 AM Dubai (`0 6 * * *`)
 
 > **Note**: Vercel Hobby plan limits cron jobs to once per day. For more frequent checks (e.g., every 30 minutes like HubSpot), upgrade to Vercel Pro plan.
+
+### Retry Failed Social Posts - THE ORIGINAL PURPOSE
+
+This cron job addresses the **original purpose** of the app: **publishing posts that failed in HubSpot due to quota limits or errors since Dec 15, 2024**.
+
+It fetches blog posts from HubSpot that have:
+- Failed social media publishing attempts
+- Error status or cancelled broadcasts
+- Quota exceeded errors
+- Not been successfully published to social platforms
+
+The cron job then schedules these posts for automatic retry publishing to the failed platforms, ensuring **all your blog content eventually gets published to social media** even when HubSpot hits quota limits.
 
 ## Configuration
 
