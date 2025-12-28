@@ -9,10 +9,8 @@ const hubspotClient = process.env.HUBSPOT_API_KEY
 /**
  * Fetch blog posts from HubSpot that have failed social media publishing
  *
- * This queries HubSpot's social media broadcast API to find posts with:
- * - Status: FAILED, ERROR, or CANCELLED
- * - Published after Dec 15, 2024 (when quota issues started)
- * - Have not been successfully retried yet
+ * This queries HubSpot's social media API to find posts with status "FAILED"
+ * From: https://app.hubspot.com/social/3475345/manage/failed
  */
 export async function getFailedHubSpotSocialPosts() {
   try {
@@ -21,60 +19,63 @@ export async function getFailedHubSpotSocialPosts() {
       return [];
     }
 
-    console.log("[HubSpot Social] Fetching failed social broadcasts...");
+    console.log("[HubSpot Social] Fetching failed social posts from HubSpot...");
 
-    // Date filter: Posts from Dec 15, 2024 onwards
-    const cutoffDate = new Date("2024-12-15T00:00:00Z").getTime();
-
-    // Fetch social broadcasts from HubSpot
-    // HubSpot Social Media API endpoint
+    // HubSpot Social Publishing API v3
+    // https://developers.hubspot.com/docs/api/marketing/social-media
     const response: any = await hubspotClient.apiRequest({
       method: "GET",
-      path: `/broadcast/v1/broadcasts`,
+      path: `/marketing/v3/social/publishing/posts`,
       qs: {
         limit: 100,
-        // Filter for failed broadcasts
-        broadcastStatus: "FAILED,ERROR,CANCELLED",
+        state: "FAILED,CANCELED,ERROR",
       },
     });
 
-    console.log(`[HubSpot Social] Found ${response.broadcasts?.length || 0} failed broadcasts`);
+    console.log(`[HubSpot Social] API Response:`, JSON.stringify(response, null, 2));
 
-    if (!response.broadcasts || response.broadcasts.length === 0) {
-      console.log("[HubSpot Social] No failed broadcasts found");
-      return [];
+    const posts = response.results || [];
+    console.log(`[HubSpot Social] Found ${posts.length} failed posts`);
+
+    if (posts.length === 0) {
+      console.log("[HubSpot Social] No failed posts found, trying fallback...");
+      return await getFallbackBlogPostsForSocial();
     }
 
-    // Transform HubSpot broadcasts to our format
-    const failedPosts = response.broadcasts
-      .filter((broadcast: any) => {
-        // Only include posts after cutoff date
-        const publishedAt = broadcast.publishedAt || broadcast.createdAt;
-        return publishedAt && publishedAt >= cutoffDate;
-      })
-      .map((broadcast: any) => ({
-        blogId: broadcast.contentId || broadcast.id,
-        blogTitle: broadcast.message?.split('\n')[0] || "Untitled Post",
-        blogUrl: broadcast.linkUrl || "",
-        socialContent: broadcast.message || "",
-        featuredImage: broadcast.photoUrl || "",
-        publishDate: new Date(broadcast.publishedAt || broadcast.createdAt).toISOString(),
-        failedPlatforms: broadcast.channels?.map((ch: any) => mapHubSpotChannel(ch.channelKey)) || [],
-        failureReason: broadcast.statusMessage || broadcast.error || "Unknown error",
-        hubspotBroadcastId: broadcast.id,
-        retryAttempts: broadcast.retryCount || 0,
-      }));
+    // Transform HubSpot posts to our format
+    const failedPosts = posts.map((post: any) => ({
+      blogId: post.id,
+      blogTitle: extractTitle(post.message || post.content || ""),
+      blogUrl: extractUrl(post.message || post.content || ""),
+      socialContent: post.message || post.content || "",
+      featuredImage: post.photoUrl || post.imageUrl || "",
+      publishDate: post.publishedAt || post.createdAt,
+      failedPlatforms: (post.channels || []).map((ch: any) => mapHubSpotChannel(ch)),
+      failureReason: post.state || "FAILED",
+      hubspotBroadcastId: post.id,
+      retryAttempts: 0,
+    }));
 
     console.log(`[HubSpot Social] Returning ${failedPosts.length} failed posts for retry`);
     return failedPosts;
 
   } catch (error: any) {
-    console.error("[HubSpot Social] Error fetching failed broadcasts:", error.message);
+    console.error("[HubSpot Social] Error fetching failed posts:", error.message);
+    console.error("[HubSpot Social] Full error:", error);
 
-    // If the social media API endpoint doesn't exist or we don't have access,
-    // fall back to fetching recent blog posts and assuming they need social publishing
+    // Fall back to fetching recent blog posts
     return await getFallbackBlogPostsForSocial();
   }
+}
+
+function extractTitle(text: string): string {
+  const firstLine = text.split('\n')[0];
+  return firstLine.substring(0, 100);
+}
+
+function extractUrl(text: string): string {
+  const urlMatch = text.match(/(https?:\/\/[^\s]+)/);
+  return urlMatch ? urlMatch[1] : "";
 }
 
 /**
@@ -140,17 +141,21 @@ async function getFallbackBlogPostsForSocial() {
 /**
  * Map HubSpot channel keys to our platform names
  */
-function mapHubSpotChannel(channelKey: string): string {
+function mapHubSpotChannel(channel: any): string {
+  // Handle both string and object formats
+  const channelKey = typeof channel === 'string' ? channel : (channel?.accountType || channel?.channelKey || channel?.type);
+
   const mapping: { [key: string]: string } = {
     "LINKEDIN": "linkedin",
     "LINKEDIN_COMPANY": "linkedin",
     "FACEBOOK": "facebook",
     "FACEBOOK_PAGE": "facebook",
     "TWITTER": "twitter",
+    "X": "twitter",
     "INSTAGRAM": "instagram",
   };
 
-  return mapping[channelKey?.toUpperCase()] || channelKey?.toLowerCase() || "unknown";
+  return mapping[channelKey?.toUpperCase()] || channelKey?.toLowerCase() || "linkedin";
 }
 
 /**
