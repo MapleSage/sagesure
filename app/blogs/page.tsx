@@ -487,7 +487,7 @@ export default function BlogsPage() {
                   <div className="space-y-4">
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
                       <p className="text-red-800">
-                        <strong>{unsuccessfulPosts.length} posts</strong> from RSS feeds need social publishing (published since Dec 15, 2024)
+                        <strong>{unsuccessfulPosts.length} posts</strong> from RSS feeds need social publishing (published since Dec 15, 2025)
                       </p>
                     </div>
 
@@ -497,24 +497,40 @@ export default function BlogsPage() {
                       </div>
                     ) : (
                       unsuccessfulPosts.map((post, index) => (
-                        <div key={index} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-gray-900 mb-1">{post.blogTitle}</h3>
-                              <p className="text-sm text-gray-600 mb-2">{post.socialContent?.substring(0, 150)}...</p>
-                              <div className="flex gap-2 items-center text-xs text-gray-500">
-                                <span className="bg-red-100 text-red-800 px-2 py-1 rounded">
-                                  {post.failureReason}
-                                </span>
-                                <span>{new Date(post.publishDate).toLocaleDateString()}</span>
-                                {post.blogUrl && (
-                                  <a href={post.blogUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                                    View Post →
-                                  </a>
-                                )}
+                        <div key={index} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                          <div className="flex gap-4">
+                            {/* Featured Image */}
+                            {post.featuredImage && (
+                              <div className="w-48 h-32 flex-shrink-0">
+                                <img
+                                  src={post.featuredImage}
+                                  alt={post.blogTitle}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
                               </div>
-                            </div>
-                            <button
+                            )}
+
+                            {/* Content */}
+                            <div className="flex-1 p-4 flex justify-between items-start">
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-gray-900 mb-1">{post.blogTitle}</h3>
+                                <p className="text-sm text-gray-600 mb-2">{post.socialContent?.substring(0, 150)}...</p>
+                                <div className="flex gap-2 items-center text-xs text-gray-500">
+                                  <span className="bg-red-100 text-red-800 px-2 py-1 rounded">
+                                    {post.failureReason}
+                                  </span>
+                                  <span>{new Date(post.publishDate).toLocaleDateString()}</span>
+                                  {post.blogUrl && (
+                                    <a href={post.blogUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                      View Post →
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                              <button
                               onClick={async () => {
                                 if (confirm('Schedule this post for social publishing?')) {
                                   try {
@@ -546,6 +562,7 @@ export default function BlogsPage() {
                               className="ml-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm whitespace-nowrap">
                               Retry Publishing
                             </button>
+                            </div>
                           </div>
                         </div>
                       ))
