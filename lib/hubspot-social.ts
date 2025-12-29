@@ -82,7 +82,7 @@ function extractUrl(text: string): string {
  * Fallback method: Use RSS feeds to get all blog posts that need social publishing
  * This is more reliable than the HubSpot API
  *
- * Returns ALL posts from RSS feeds published since Dec 15, 2024
+ * Returns ALL posts from RSS feeds published since Dec 15, 2025
  * These correspond to the unsuccessful posts shown in HubSpot's social publishing UI
  */
 async function getFallbackBlogPostsForSocial() {
@@ -95,16 +95,16 @@ async function getFallbackBlogPostsForSocial() {
     const rssBlogs = await fetchAllRSSFeeds();
     console.log(`[HubSpot Social] Found ${rssBlogs.length} posts in RSS feeds`);
 
-    const cutoffDate = new Date("2024-12-15T00:00:00Z");
+    const cutoffDate = new Date("2025-12-15T00:00:00Z");
     const postsNeedingSocial = [];
 
-    // Return ALL RSS posts from Dec 15, 2024 onwards
+    // Return ALL RSS posts from Dec 15, 2025 onwards
     // These are posts that should have been published to social media via HubSpot but failed
     for (const blog of rssBlogs) {
       try {
         const pubDate = new Date(blog.pubDate);
 
-        // Only process posts from Dec 15, 2024 onwards
+        // Only process posts from Dec 15, 2025 onwards
         if (pubDate < cutoffDate) {
           continue;
         }
