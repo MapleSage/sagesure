@@ -47,6 +47,15 @@ export default function BlogsPage() {
   const [scheduledPosts, setScheduledPosts] = useState<any[]>([]);
   const [fetchingScheduled, setFetchingScheduled] = useState(false);
 
+  // Helper: Get next cron run time (midnight UTC)
+  const getNextCronRunTime = () => {
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    tomorrow.setUTCHours(0, 0, 0, 0);
+    return tomorrow.toISOString();
+  };
+
   useEffect(() => {
     fetch("/api/auth/me")
       .then((res) => res.json())
@@ -576,15 +585,17 @@ export default function BlogsPage() {
                                       body: JSON.stringify({
                                         content: post.socialContent,
                                         platforms: post.failedPlatforms,
-                                        scheduledFor: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes from now
+                                        scheduledFor: getNextCronRunTime(), // Next midnight UTC (4 AM Dubai)
                                         status: 'scheduled',
                                         imageUrl: post.featuredImage,
                                       }),
                                     });
                                     const data = await response.json();
                                     if (data.success) {
-                                      const scheduledTime = new Date(data.scheduledFor).toLocaleString();
-                                      alert(`Post scheduled for ${scheduledTime}!\n\nView it on the Dashboard: /dashboard`);
+                                      const scheduledDate = new Date(data.scheduledFor);
+                                      const dateStr = scheduledDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                                      const timeStr = scheduledDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZoneName: 'short' });
+                                      alert(`Post scheduled for publishing!\n\nWill publish at: ${dateStr} at ${timeStr}\n(Next cron run: midnight UTC / 4 AM Dubai)\n\nView on Scheduled Posts tab or Dashboard.`);
                                       // Remove from unsuccessful list
                                       setUnsuccessfulPosts(unsuccessfulPosts.filter((_, i) => i !== index));
                                     } else {
@@ -618,7 +629,18 @@ export default function BlogsPage() {
                         No scheduled posts found.
                       </div>
                     ) : (
-                      scheduledPosts.map((post, index) => {
+                      scheduledPosts
+                        .filter((post) => {
+                          if (selectedBrand === "all") return true;
+                          const isMapleSage = post.content?.includes('blog.maplesage.com');
+                          return selectedBrand === "maplesage" ? isMapleSage : !isMapleSage;
+                        })
+                        .sort((a, b) => {
+                          const dateA = new Date(a.scheduledFor || 0).getTime();
+                          const dateB = new Date(b.scheduledFor || 0).getTime();
+                          return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+                        })
+                        .map((post, index) => {
                         const scheduledDate = new Date(post.scheduledFor);
                         const formattedDate = scheduledDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
                         const formattedTime = scheduledDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
