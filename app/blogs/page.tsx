@@ -621,10 +621,28 @@ export default function BlogsPage() {
                         const formattedDate = scheduledDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
                         const formattedTime = scheduledDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
+                        // Determine brand from content (MapleSage or SageSure)
+                        const isMapleSage = post.content?.toLowerCase().includes('maplesage') ||
+                                           post.content?.toLowerCase().includes('fashion') ||
+                                           post.content?.toLowerCase().includes('retail');
+                        const brand = isMapleSage ? 'MapleSage Blog' : 'SageSure AI';
+
+                        const platformIcons: {[key: string]: string} = {
+                          'linkedin': '🔗',
+                          'facebook': '📘',
+                          'twitter': '🐦',
+                          'instagram': '📷'
+                        };
+
                         return (
                           <div key={index} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                            <div className="flex justify-between items-start">
+                            <div className="flex justify-between items-start gap-4">
                               <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="text-xs font-semibold text-purple-700 bg-purple-50 px-2 py-1 rounded">
+                                    {brand}
+                                  </span>
+                                </div>
                                 <h3 className="font-semibold text-gray-900 mb-2 text-base">
                                   {post.content?.split('\n')[0].substring(0, 120)}
                                   {post.content?.split('\n')[0].length > 120 ? '...' : ''}
@@ -632,14 +650,20 @@ export default function BlogsPage() {
                                 <p className="text-sm text-gray-600 mb-3">
                                   {post.content?.substring(0, 200)}{post.content?.length > 200 ? '...' : ''}
                                 </p>
-                                <div className="flex gap-3 items-center text-xs">
-                                  <span className="text-blue-600 font-medium">
-                                    Scheduled for: {formattedDate}, {formattedTime}
-                                  </span>
-                                  <span className="text-gray-400">•</span>
-                                  <span className="text-green-700 bg-green-50 px-2 py-1 rounded">
-                                    Platforms: {post.platforms?.join(', ')}
-                                  </span>
+                                <div className="flex flex-col gap-2 text-xs">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-blue-600 font-medium">
+                                      ⏰ Scheduled: {formattedDate} at {formattedTime}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-gray-700 font-medium">Will publish to:</span>
+                                    {post.platforms?.map((platform: string) => (
+                                      <span key={platform} className="bg-green-50 text-green-700 px-2 py-1 rounded font-medium">
+                                        {platformIcons[platform] || '📱'} {platform}
+                                      </span>
+                                    ))}
+                                  </div>
                                 </div>
                               </div>
                               <button
