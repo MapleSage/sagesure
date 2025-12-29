@@ -547,7 +547,8 @@ export default function BlogsPage() {
                                     });
                                     const data = await response.json();
                                     if (data.success) {
-                                      alert('Post scheduled for publishing!');
+                                      const scheduledTime = new Date(data.scheduledFor).toLocaleString();
+                                      alert(`Post scheduled for ${scheduledTime}!\n\nView it on the Dashboard: /dashboard`);
                                       // Remove from unsuccessful list
                                       setUnsuccessfulPosts(unsuccessfulPosts.filter((_, i) => i !== index));
                                     } else {
