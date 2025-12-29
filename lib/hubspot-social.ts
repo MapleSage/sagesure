@@ -81,6 +81,9 @@ function extractUrl(text: string): string {
 /**
  * Fallback method: Use RSS feeds to get all blog posts that need social publishing
  * This is more reliable than the HubSpot API
+ *
+ * Returns ALL posts from RSS feeds published since Dec 15, 2024
+ * These correspond to the unsuccessful posts shown in HubSpot's social publishing UI
  */
 async function getFallbackBlogPostsForSocial() {
   try {
@@ -88,7 +91,6 @@ async function getFallbackBlogPostsForSocial() {
 
     // Import RSS feeds function
     const { fetchAllRSSFeeds } = require("@/lib/rss-feeds");
-    const { getBlogByRssId } = require("@/lib/azure-storage");
 
     const rssBlogs = await fetchAllRSSFeeds();
     console.log(`[HubSpot Social] Found ${rssBlogs.length} posts in RSS feeds`);
@@ -96,7 +98,8 @@ async function getFallbackBlogPostsForSocial() {
     const cutoffDate = new Date("2024-12-15T00:00:00Z");
     const postsNeedingSocial = [];
 
-    // Check each RSS post to see if it needs social publishing
+    // Return ALL RSS posts from Dec 15, 2024 onwards
+    // These are posts that should have been published to social media via HubSpot but failed
     for (const blog of rssBlogs) {
       try {
         const pubDate = new Date(blog.pubDate);
@@ -106,24 +109,18 @@ async function getFallbackBlogPostsForSocial() {
           continue;
         }
 
-        // Check if this blog already exists in our system
-        const existingBlog = await getBlogByRssId("info@sagesure.io", blog.id);
-
-        // If it doesn't exist in our system, it needs to be processed for social
-        if (!existingBlog) {
-          postsNeedingSocial.push({
-            blogId: blog.id,
-            blogTitle: blog.title,
-            blogUrl: blog.link,
-            socialContent: `${blog.title}\n\n${blog.excerpt || ""}\n\nRead more: ${blog.link}`,
-            featuredImage: blog.featuredImage || "",
-            publishDate: blog.pubDate,
-            failedPlatforms: ["linkedin", "facebook", "twitter"],
-            failureReason: "RSS post needs social publishing",
-            rssId: blog.id,
-            retryAttempts: 0,
-          });
-        }
+        postsNeedingSocial.push({
+          blogId: blog.id,
+          blogTitle: blog.title,
+          blogUrl: blog.link,
+          socialContent: `${blog.title}\n\n${blog.excerpt || ""}\n\nRead more: ${blog.link}`,
+          featuredImage: blog.featuredImage || "",
+          publishDate: blog.pubDate,
+          failedPlatforms: ["linkedin", "facebook", "twitter"],
+          failureReason: "HubSpot social publishing failed - retry needed",
+          rssId: blog.id,
+          retryAttempts: 0,
+        });
       } catch (err) {
         console.error(`[HubSpot Social] Error processing blog ${blog.id}:`, err);
       }
