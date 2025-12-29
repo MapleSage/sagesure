@@ -616,39 +616,51 @@ export default function BlogsPage() {
                         No scheduled posts found.
                       </div>
                     ) : (
-                      scheduledPosts.map((post, index) => (
-                        <div key={index} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-gray-900 mb-1">{post.content?.substring(0, 100)}{post.content?.length > 100 ? '...' : ''}</h3>
-                              <p className="text-sm text-gray-600 mb-2">{post.content?.substring(0, 200)}...</p>
-                              <div className="flex gap-2 items-center text-xs text-gray-500">
-                                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                  Scheduled for: {new Date(post.scheduledFor).toLocaleString()}
-                                </span>
-                                <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
-                                  Platforms: {post.platforms?.join(', ')}
-                                </span>
+                      scheduledPosts.map((post, index) => {
+                        const scheduledDate = new Date(post.scheduledFor);
+                        const formattedDate = scheduledDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
+                        const formattedTime = scheduledDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+                        return (
+                          <div key={index} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-gray-900 mb-2 text-base">
+                                  {post.content?.split('\n')[0].substring(0, 120)}
+                                  {post.content?.split('\n')[0].length > 120 ? '...' : ''}
+                                </h3>
+                                <p className="text-sm text-gray-600 mb-3">
+                                  {post.content?.substring(0, 200)}{post.content?.length > 200 ? '...' : ''}
+                                </p>
+                                <div className="flex gap-3 items-center text-xs">
+                                  <span className="text-blue-600 font-medium">
+                                    Scheduled for: {formattedDate}, {formattedTime}
+                                  </span>
+                                  <span className="text-gray-400">•</span>
+                                  <span className="text-green-700 bg-green-50 px-2 py-1 rounded">
+                                    Platforms: {post.platforms?.join(', ')}
+                                  </span>
+                                </div>
                               </div>
-                            </div>
-                            <button
-                              onClick={async () => {
-                                if (confirm('Cancel this scheduled post?')) {
-                                  try {
-                                    // TODO: Add delete API endpoint
-                                    alert('Delete functionality coming soon!');
-                                  } catch (error) {
-                                    console.error('Delete error:', error);
-                                    alert('Failed to cancel post');
+                              <button
+                                onClick={async () => {
+                                  if (confirm('Cancel this scheduled post?')) {
+                                    try {
+                                      // TODO: Add delete API endpoint
+                                      alert('Delete functionality coming soon!');
+                                    } catch (error) {
+                                      console.error('Delete error:', error);
+                                      alert('Failed to cancel post');
+                                    }
                                   }
-                                }
-                              }}
-                              className="ml-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm whitespace-nowrap">
-                              Cancel
-                            </button>
+                                }}
+                                className="ml-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm whitespace-nowrap">
+                                Cancel
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 ) : (
