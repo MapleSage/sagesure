@@ -143,8 +143,11 @@ export async function getUserPosts(userId: string) {
       userId: entity.partitionKey,
       content: entity.content,
       platforms: JSON.parse(entity.platforms as string),
+      platformContent: entity.platformContent ? JSON.parse(entity.platformContent as string) : {},
       scheduledFor: entity.scheduledFor,
       status: entity.status,
+      imageUrl: entity.imageUrl || "",
+      mediaUrls: entity.mediaUrls ? JSON.parse(entity.mediaUrls as string) : {},
       createdAt: entity.createdAt,
     });
   }

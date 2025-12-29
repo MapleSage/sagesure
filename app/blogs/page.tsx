@@ -459,6 +459,7 @@ export default function BlogsPage() {
             ) : (
               <>
                 {/* Pagination Controls - Top */}
+                {!showScheduledPosts && (
                 <div className="bg-white rounded-lg shadow p-4 mb-4">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-4">
@@ -515,6 +516,7 @@ export default function BlogsPage() {
                     </div>
                   </div>
                 </div>
+                )}
 
                 {/* Unsuccessful Posts View */}
                 {showUnsuccessfulPosts ? (
@@ -621,10 +623,8 @@ export default function BlogsPage() {
                         const formattedDate = scheduledDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
                         const formattedTime = scheduledDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
-                        // Determine brand from content (MapleSage or SageSure)
-                        const isMapleSage = post.content?.toLowerCase().includes('maplesage') ||
-                                           post.content?.toLowerCase().includes('fashion') ||
-                                           post.content?.toLowerCase().includes('retail');
+                        // Determine brand from URL in content
+                        const isMapleSage = post.content?.includes('blog.maplesage.com');
                         const brand = isMapleSage ? 'MapleSage Blog' : 'SageSure AI';
 
                         const platformIcons: {[key: string]: string} = {
@@ -635,15 +635,31 @@ export default function BlogsPage() {
                         };
 
                         return (
-                          <div key={index} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                            <div className="flex justify-between items-start gap-4">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className="text-xs font-semibold text-purple-700 bg-purple-50 px-2 py-1 rounded">
-                                    {brand}
-                                  </span>
+                          <div key={index} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                            <div className="flex gap-4">
+                              {/* Featured Image */}
+                              {post.imageUrl && (
+                                <div className="w-48 h-32 flex-shrink-0">
+                                  <img
+                                    src={post.imageUrl}
+                                    alt="Post"
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                    }}
+                                  />
                                 </div>
-                                <h3 className="font-semibold text-gray-900 mb-2 text-base">
+                              )}
+
+                              {/* Content */}
+                              <div className="flex-1 p-4 flex justify-between items-start gap-4">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-xs font-semibold text-purple-700 bg-purple-50 px-2 py-1 rounded">
+                                      {brand}
+                                    </span>
+                                  </div>
+                                  <h3 className="font-semibold text-gray-900 mb-2 text-base">
                                   {post.content?.split('\n')[0].substring(0, 120)}
                                   {post.content?.split('\n')[0].length > 120 ? '...' : ''}
                                 </h3>
@@ -678,9 +694,10 @@ export default function BlogsPage() {
                                     }
                                   }
                                 }}
-                                className="ml-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm whitespace-nowrap">
+                                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm whitespace-nowrap self-start">
                                 Cancel
                               </button>
+                            </div>
                             </div>
                           </div>
                         );
@@ -815,7 +832,7 @@ export default function BlogsPage() {
                 )}
 
               {/* Pagination Controls - Bottom */}
-              {!showUnsuccessfulPosts && (
+              {!showUnsuccessfulPosts && !showScheduledPosts && (
               <div className="bg-white rounded-lg shadow p-4 mt-4">
                 <div className="flex justify-between items-center">
                   <div className="text-sm text-gray-600">
