@@ -46,6 +46,10 @@ export default function BlogsPage() {
   const [showScheduledPosts, setShowScheduledPosts] = useState(false);
   const [scheduledPosts, setScheduledPosts] = useState<any[]>([]);
   const [fetchingScheduled, setFetchingScheduled] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [selectedPostForSchedule, setSelectedPostForSchedule] = useState<any>(null);
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
 
   // Helper: Get next cron run time (midnight UTC)
   const getNextCronRunTime = () => {
@@ -54,6 +58,44 @@ export default function BlogsPage() {
     tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
     tomorrow.setUTCHours(0, 0, 0, 0);
     return tomorrow.toISOString();
+  };
+
+  // Handle scheduling post with custom time
+  const handleSchedulePost = async (post: any, index: number, customDateTime?: string) => {
+    try {
+      const scheduledFor = customDateTime || getNextCronRunTime();
+
+      const response = await fetch('/api/posts/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: post.socialContent,
+          platforms: post.failedPlatforms,
+          scheduledFor,
+          status: 'scheduled',
+          imageUrl: post.featuredImage,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        const scheduledDate = new Date(data.scheduledFor);
+        const dateStr = scheduledDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const timeStr = scheduledDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZoneName: 'short' });
+        alert(`Post scheduled for publishing!\n\nWill publish at: ${dateStr} at ${timeStr}\n\nView on Scheduled Posts tab or Dashboard.`);
+        // Remove from unsuccessful list
+        setUnsuccessfulPosts(unsuccessfulPosts.filter((_, i) => i !== index));
+        setShowScheduleModal(false);
+        setSelectedPostForSchedule(null);
+        setScheduleDate("");
+        setScheduleTime("");
+      } else {
+        alert('Failed to schedule post');
+      }
+    } catch (error) {
+      console.error('Schedule error:', error);
+      alert('Failed to schedule post');
+    }
   };
 
   useEffect(() => {
@@ -576,36 +618,14 @@ export default function BlogsPage() {
                                 </div>
                               </div>
                               <button
-                              onClick={async () => {
-                                if (confirm('Schedule this post for social publishing?')) {
-                                  try {
-                                    const response = await fetch('/api/posts/create', {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({
-                                        content: post.socialContent,
-                                        platforms: post.failedPlatforms,
-                                        scheduledFor: getNextCronRunTime(), // Next midnight UTC (4 AM Dubai)
-                                        status: 'scheduled',
-                                        imageUrl: post.featuredImage,
-                                      }),
-                                    });
-                                    const data = await response.json();
-                                    if (data.success) {
-                                      const scheduledDate = new Date(data.scheduledFor);
-                                      const dateStr = scheduledDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                                      const timeStr = scheduledDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZoneName: 'short' });
-                                      alert(`Post scheduled for publishing!\n\nWill publish at: ${dateStr} at ${timeStr}\n(Next cron run: midnight UTC / 4 AM Dubai)\n\nView on Scheduled Posts tab or Dashboard.`);
-                                      // Remove from unsuccessful list
-                                      setUnsuccessfulPosts(unsuccessfulPosts.filter((_, i) => i !== index));
-                                    } else {
-                                      alert('Failed to schedule post');
-                                    }
-                                  } catch (error) {
-                                    console.error('Schedule error:', error);
-                                    alert('Failed to schedule post');
-                                  }
-                                }
+                              onClick={() => {
+                                setSelectedPostForSchedule({ post, index });
+                                // Set default to tomorrow at current time
+                                const tomorrow = new Date();
+                                tomorrow.setDate(tomorrow.getDate() + 1);
+                                setScheduleDate(tomorrow.toISOString().split('T')[0]);
+                                setScheduleTime('12:00');
+                                setShowScheduleModal(true);
                               }}
                               className="ml-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm whitespace-nowrap">
                               Retry Publishing
@@ -1080,6 +1100,94 @@ export default function BlogsPage() {
           </div>
         )}
       </div>
+
+      {/* Schedule Time Picker Modal */}
+      {showScheduleModal && selectedPostForSchedule && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold mb-4">Schedule Post for Publishing</h3>
+
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-3">
+                <strong>{selectedPostForSchedule.post.blogTitle}</strong>
+              </p>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Date
+              </label>
+              <input
+                type="date"
+                value={scheduleDate}
+                onChange={(e) => setScheduleDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Time (your local timezone)
+              </label>
+              <input
+                type="time"
+                value={scheduleTime}
+                onChange={(e) => setScheduleTime(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-4">
+              <p className="text-xs text-blue-800">
+                <strong>Note:</strong> Posts will be published at the next cron job run after your selected time. Cron runs daily at midnight UTC (4 AM Dubai).
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  if (!scheduleDate || !scheduleTime) {
+                    alert('Please select both date and time');
+                    return;
+                  }
+                  const customDateTime = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
+                  handleSchedulePost(
+                    selectedPostForSchedule.post,
+                    selectedPostForSchedule.index,
+                    customDateTime
+                  );
+                }}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+                Schedule Post
+              </button>
+              <button
+                onClick={() => {
+                  setShowScheduleModal(false);
+                  setSelectedPostForSchedule(null);
+                  setScheduleDate("");
+                  setScheduleTime("");
+                }}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium">
+                Cancel
+              </button>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  handleSchedulePost(
+                    selectedPostForSchedule.post,
+                    selectedPostForSchedule.index
+                  );
+                }}
+                className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">
+                Quick Schedule: Next Midnight UTC (4 AM Dubai)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
