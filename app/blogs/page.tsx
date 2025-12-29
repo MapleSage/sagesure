@@ -43,6 +43,9 @@ export default function BlogsPage() {
   const [showUnsuccessfulPosts, setShowUnsuccessfulPosts] = useState(false);
   const [unsuccessfulPosts, setUnsuccessfulPosts] = useState<any[]>([]);
   const [fetchingUnsuccessful, setFetchingUnsuccessful] = useState(false);
+  const [showScheduledPosts, setShowScheduledPosts] = useState(false);
+  const [scheduledPosts, setScheduledPosts] = useState<any[]>([]);
+  const [fetchingScheduled, setFetchingScheduled] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -315,6 +318,7 @@ export default function BlogsPage() {
                         setFetchingUnsuccessful(true);
                         setShowUnsuccessfulPosts(true);
                         setShowHubSpotBlogs(false);
+                        setShowScheduledPosts(false);
                         try {
                           const response = await fetch("/api/test-hubspot-failed");
                           const data = await response.json();
@@ -337,6 +341,36 @@ export default function BlogsPage() {
                           : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                       } disabled:bg-gray-300`}>
                       {fetchingUnsuccessful ? "Loading..." : `Unsuccessful (72)`}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setFetchingScheduled(true);
+                        setShowScheduledPosts(true);
+                        setShowHubSpotBlogs(false);
+                        setShowUnsuccessfulPosts(false);
+                        try {
+                          const response = await fetch("/api/posts/list");
+                          const data = await response.json();
+                          if (data.success) {
+                            const scheduled = data.posts.filter((p: any) => p.status === 'scheduled');
+                            setScheduledPosts(scheduled);
+                          } else {
+                            alert("Failed to fetch scheduled posts");
+                          }
+                        } catch (error) {
+                          console.error("Fetch scheduled posts error:", error);
+                          alert("Failed to fetch scheduled posts");
+                        } finally {
+                          setFetchingScheduled(false);
+                        }
+                      }}
+                      disabled={fetchingScheduled}
+                      className={`px-4 py-2 rounded-lg text-sm ${
+                        showScheduledPosts
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      } disabled:bg-gray-300`}>
+                      {fetchingScheduled ? "Loading..." : `Scheduled Posts`}
                     </button>
                   </div>
                 </div>
@@ -564,6 +598,54 @@ export default function BlogsPage() {
                               Retry Publishing
                             </button>
                             </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                ) : showScheduledPosts ? (
+                  <div className="space-y-4">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                      <p className="text-blue-800">
+                        <strong>{scheduledPosts.length} posts</strong> scheduled for publishing
+                      </p>
+                    </div>
+
+                    {scheduledPosts.length === 0 ? (
+                      <div className="text-center py-12 text-gray-500">
+                        No scheduled posts found.
+                      </div>
+                    ) : (
+                      scheduledPosts.map((post, index) => (
+                        <div key={index} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-gray-900 mb-1">{post.content?.substring(0, 100)}{post.content?.length > 100 ? '...' : ''}</h3>
+                              <p className="text-sm text-gray-600 mb-2">{post.content?.substring(0, 200)}...</p>
+                              <div className="flex gap-2 items-center text-xs text-gray-500">
+                                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                  Scheduled for: {new Date(post.scheduledFor).toLocaleString()}
+                                </span>
+                                <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
+                                  Platforms: {post.platforms?.join(', ')}
+                                </span>
+                              </div>
+                            </div>
+                            <button
+                              onClick={async () => {
+                                if (confirm('Cancel this scheduled post?')) {
+                                  try {
+                                    // TODO: Add delete API endpoint
+                                    alert('Delete functionality coming soon!');
+                                  } catch (error) {
+                                    console.error('Delete error:', error);
+                                    alert('Failed to cancel post');
+                                  }
+                                }
+                              }}
+                              className="ml-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm whitespace-nowrap">
+                              Cancel
+                            </button>
                           </div>
                         </div>
                       ))
