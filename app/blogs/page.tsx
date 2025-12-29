@@ -351,15 +351,15 @@ export default function BlogsPage() {
                         try {
                           const response = await fetch("/api/posts/list");
                           const data = await response.json();
-                          if (data.success) {
+                          if (data.posts) {
                             const scheduled = data.posts.filter((p: any) => p.status === 'scheduled');
                             setScheduledPosts(scheduled);
-                          } else {
-                            alert("Failed to fetch scheduled posts");
+                          } else if (data.error) {
+                            alert(`Failed to fetch scheduled posts: ${data.error}`);
                           }
-                        } catch (error) {
+                        } catch (error: any) {
                           console.error("Fetch scheduled posts error:", error);
-                          alert("Failed to fetch scheduled posts");
+                          alert(`Failed to fetch scheduled posts: ${error.message}`);
                         } finally {
                           setFetchingScheduled(false);
                         }
