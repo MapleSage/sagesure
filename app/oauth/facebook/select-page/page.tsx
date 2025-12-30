@@ -73,6 +73,7 @@ function SelectFacebookPageContent() {
     try {
       const accessToken = searchParams.get("token");
       const expiresIn = searchParams.get("expires_in");
+      const brand = searchParams.get("brand") || "sagesure";
 
       // Save the selected page
       const response = await fetch("/api/oauth/facebook/save-page", {
@@ -85,13 +86,14 @@ function SelectFacebookPageContent() {
           pageName: page.name,
           pageAccessToken: page.access_token,
           instagramAccountId: page.instagramAccountId,
+          brand,
         }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        router.push("/dashboard?connected=facebook,instagram");
+        router.push(`/dashboard?connected=facebook,instagram&brand=${brand}`);
       } else {
         setError(data.error || "Failed to save page selection");
         setSaving(false);

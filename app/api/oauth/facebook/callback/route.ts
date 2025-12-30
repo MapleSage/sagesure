@@ -19,10 +19,13 @@ export async function GET(req: NextRequest) {
     const code = searchParams.get("code");
     const error = searchParams.get("error");
     const errorDescription = searchParams.get("error_description");
+    const state = searchParams.get("state");
+    const brand = state || "sagesure";
 
     console.log("[Facebook Callback] code:", code ? "present" : "missing");
     console.log("[Facebook Callback] error:", error);
     console.log("[Facebook Callback] error_description:", errorDescription);
+    console.log("[Facebook Callback] brand:", brand);
 
     if (error || !code) {
       console.log(
@@ -48,13 +51,14 @@ export async function GET(req: NextRequest) {
     const tokenData = await exchangeFacebookCode(code, redirectUri);
     console.log("[Facebook Callback] Token received, redirecting to page selection...");
 
-    // Redirect to page selection with token
+    // Redirect to page selection with token and brand
     const selectPageUrl = new URL(
       "/oauth/facebook/select-page",
       process.env.NEXTAUTH_URL || req.url
     );
     selectPageUrl.searchParams.set("token", tokenData.access_token);
     selectPageUrl.searchParams.set("expires_in", String(tokenData.expires_in || 5184000));
+    selectPageUrl.searchParams.set("brand", brand);
 
     console.log("[Facebook Callback] Redirecting to:", selectPageUrl.toString());
     return NextResponse.redirect(selectPageUrl);
