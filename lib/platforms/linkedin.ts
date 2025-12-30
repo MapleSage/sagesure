@@ -103,7 +103,11 @@ export async function postToLinkedIn(
 
         console.log("[LinkedIn] Image added to post data");
       } catch (imageError: any) {
-        console.error("[LinkedIn] Image upload failed:", imageError.response?.data || imageError.message);
+        console.error("[LinkedIn] Image upload failed!");
+        console.error("[LinkedIn] Error status:", imageError.response?.status);
+        console.error("[LinkedIn] Error data:", JSON.stringify(imageError.response?.data, null, 2));
+        console.error("[LinkedIn] Error message:", imageError.message);
+        console.error("[LinkedIn] Error headers:", imageError.response?.headers);
         console.error("[LinkedIn] Continuing without image...");
         // Continue posting without image rather than failing completely
       }
