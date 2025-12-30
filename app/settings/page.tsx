@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FaArrowLeft, FaFacebook, FaLinkedin, FaTwitter, FaInstagram, FaYoutube, FaSpinner } from "react-icons/fa";
+import { FaArrowLeft, FaFacebook, FaLinkedin, FaTwitter, FaInstagram, FaSpinner } from "react-icons/fa";
 import type { Brand } from "@/lib/brand-detection";
 
 interface ConnectedAccount {
@@ -21,7 +21,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"accounts" | "publishing" | "email">("accounts");
+  const [selectedBrand, setSelectedBrand] = useState<Brand>("sagesure");
   const [connectedAccounts, setConnectedAccounts] = useState<ConnectedAccount[]>([]);
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
 
@@ -53,7 +53,6 @@ export default function SettingsPage() {
   };
 
   const handleConnect = (platform: string, brand: Brand) => {
-    // Redirect to OAuth with brand parameter
     window.location.href = `/api/oauth/${platform}/authorize?brand=${brand}`;
   };
 
@@ -106,11 +105,14 @@ export default function SettingsPage() {
         return <FaTwitter className="text-blue-400" />;
       case "instagram":
         return <FaInstagram className="text-pink-600" />;
-      case "youtube":
-        return <FaYoutube className="text-red-600" />;
       default:
         return null;
     }
+  };
+
+  const getPlatformDisplayName = (platform: string) => {
+    if (platform === "twitter") return "Twitter/X";
+    return platform.charAt(0).toUpperCase() + platform.slice(1);
   };
 
   if (loading) {
@@ -120,6 +122,12 @@ export default function SettingsPage() {
       </div>
     );
   }
+
+  const platforms = ["linkedin", "facebook", "instagram", "twitter"];
+  const brandsConfig = {
+    sagesure: { name: "SageSure", icon: <img src="/logo.png" className="w-6 h-6" alt="SageSure" /> },
+    maplesage: { name: "MapleSage", icon: <span className="text-2xl">🍁</span> },
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -148,159 +156,115 @@ export default function SettingsPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tabs */}
         <div className="bg-white rounded-lg shadow">
+          {/* Brand Tabs */}
           <div className="border-b border-gray-200">
             <nav className="flex -mb-px">
               <button
-                onClick={() => setActiveTab("accounts")}
-                className={`px-6 py-4 text-sm font-medium border-b-2 ${
-                  activeTab === "accounts"
+                onClick={() => setSelectedBrand("sagesure")}
+                className={`px-6 py-4 text-sm font-medium border-b-2 flex items-center gap-2 ${
+                  selectedBrand === "sagesure"
                     ? "border-blue-500 text-blue-600"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}>
-                Accounts
+                {brandsConfig.sagesure.icon}
+                {brandsConfig.sagesure.name}
+              </button>
+              <button
+                onClick={() => setSelectedBrand("maplesage")}
+                className={`px-6 py-4 text-sm font-medium border-b-2 flex items-center gap-2 ${
+                  selectedBrand === "maplesage"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}>
+                {brandsConfig.maplesage.icon}
+                {brandsConfig.maplesage.name}
               </button>
             </nav>
           </div>
 
           <div className="p-6">
-            {/* Accounts Tab */}
-            {activeTab === "accounts" && (
-              <div>
-                <div className="mb-6">
-                  <h2 className="text-xl font-semibold">Connected Accounts</h2>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Manage your social media accounts across different brands
-                  </p>
-                </div>
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold">Connected Accounts</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Manage your {brandsConfig[selectedBrand].name} social media accounts
+              </p>
+            </div>
 
-                {/* Brand: MapleSage */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <span className="text-2xl">🍁</span> MapleSage
-                  </h3>
-                  <div className="space-y-3">
-                    {["linkedin", "facebook", "instagram", "twitter"].map((platform) => {
-                      const account = getAccountForBrand(platform, "maplesage");
-                      return (
-                        <BrandAccountRow
-                          key={platform}
-                          platform={platform}
-                          brand="maplesage"
-                          icon={getPlatformIcon(platform)}
-                          account={account}
-                          onConnect={() => handleConnect(platform, "maplesage")}
-                          onDisconnect={() => handleDisconnect(account!.platformKey)}
-                          disconnecting={disconnecting === account?.platformKey}
-                        />
-                      );
-                    })}
+            <div className="space-y-3">
+              {platforms.map((platform) => {
+                const account = getAccountForBrand(platform, selectedBrand);
+                const isConnected = account?.connected;
+                const isExpired = account?.expiresAt && account.expiresAt < Date.now();
+
+                return (
+                  <div
+                    key={platform}
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <div className="flex items-center gap-4">
+                      <div className="text-2xl">{getPlatformIcon(platform)}</div>
+                      <div>
+                        <div className="font-medium">{getPlatformDisplayName(platform)}</div>
+                        {isConnected ? (
+                          <>
+                            <div className="text-sm text-gray-600">
+                              {account.accountName || "Connected"}
+                            </div>
+                            {account.organizationId && (
+                              <div className="text-xs text-gray-500">
+                                Org ID: {account.organizationId}
+                              </div>
+                            )}
+                            {account.pageId && (
+                              <div className="text-xs text-gray-500">
+                                Page ID: {account.pageId}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-sm text-gray-500">Not connected</div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {isConnected && (
+                        <div className="text-right">
+                          <div
+                            className={`text-sm ${
+                              isExpired ? "text-red-600" : "text-green-600"
+                            }`}>
+                            {isExpired ? "● Expired" : "● Active"}
+                          </div>
+                        </div>
+                      )}
+                      {isConnected ? (
+                        <button
+                          onClick={() => handleDisconnect(account.platformKey)}
+                          disabled={disconnecting === account.platformKey}
+                          className="px-4 py-2 text-sm border border-red-300 text-red-600 rounded-lg hover:bg-red-50 disabled:opacity-50 flex items-center gap-2">
+                          {disconnecting === account.platformKey ? (
+                            <>
+                              <FaSpinner className="animate-spin" />
+                              Disconnecting...
+                            </>
+                          ) : (
+                            "Disconnect"
+                          )}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleConnect(platform, selectedBrand)}
+                          className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                          Connect
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-
-                {/* Brand: SageSure */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <img src="/logo.png" className="w-6 h-6" alt="SageSure" /> SageSure
-                  </h3>
-                  <div className="space-y-3">
-                    {["linkedin", "facebook", "instagram", "twitter"].map((platform) => {
-                      const account = getAccountForBrand(platform, "sagesure");
-                      return (
-                        <BrandAccountRow
-                          key={platform}
-                          platform={platform}
-                          brand="sagesure"
-                          icon={getPlatformIcon(platform)}
-                          account={account}
-                          onConnect={() => handleConnect(platform, "sagesure")}
-                          onDisconnect={() => handleDisconnect(account!.platformKey)}
-                          disconnecting={disconnecting === account?.platformKey}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Brand Account Row Component
-function BrandAccountRow({
-  platform,
-  brand,
-  icon,
-  account,
-  onConnect,
-  onDisconnect,
-  disconnecting,
-}: {
-  platform: string;
-  brand: Brand;
-  icon: React.ReactNode;
-  account?: ConnectedAccount;
-  onConnect: () => void;
-  onDisconnect: () => void;
-  disconnecting: boolean;
-}) {
-  const isConnected = account?.connected;
-  const isExpired = account?.expiresAt && account.expiresAt < Date.now();
-
-  return (
-    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-      <div className="flex items-center gap-4">
-        <div className="text-2xl">{icon}</div>
-        <div>
-          <div className="font-medium capitalize">{platform}</div>
-          {isConnected ? (
-            <>
-              <div className="text-sm text-gray-600">
-                {account.accountName || "Connected"}
-              </div>
-              {account.accountHandle && (
-                <div className="text-xs text-gray-500">{account.accountHandle}</div>
-              )}
-            </>
-          ) : (
-            <div className="text-sm text-gray-500">Not connected</div>
-          )}
-        </div>
-      </div>
-      <div className="flex items-center gap-4">
-        {isConnected && (
-          <div className="text-right">
-            <div
-              className={`text-sm ${
-                isExpired ? "text-red-600" : "text-green-600"
-              }`}>
-              {isExpired ? "● Expired" : "● Active"}
+                );
+              })}
             </div>
           </div>
-        )}
-        {isConnected ? (
-          <button
-            onClick={onDisconnect}
-            disabled={disconnecting}
-            className="px-4 py-2 text-sm border border-red-300 text-red-600 rounded-lg hover:bg-red-50 disabled:opacity-50">
-            {disconnecting ? (
-              <FaSpinner className="animate-spin" />
-            ) : (
-              "Disconnect"
-            )}
-          </button>
-        ) : (
-          <button
-            onClick={onConnect}
-            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            Connect
-          </button>
-        )}
+        </div>
       </div>
     </div>
   );
