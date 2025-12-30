@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserId } from "@/lib/auth";
 import { exchangeLinkedInCode } from "@/lib/platforms/linkedin";
-import { saveToken } from "@/lib/azure-storage";
+import { saveToken, getOAuthCredentials } from "@/lib/azure-storage";
 import { getPlatformKey, getBrandConfig, type Brand } from "@/lib/brand-detection";
 
 export async function GET(req: NextRequest) {
@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
     console.log("[LinkedIn Callback] code:", code ? "present" : "missing");
     console.log("[LinkedIn Callback] error:", error);
     console.log("[LinkedIn Callback] error_description:", errorDescription);
+    console.log("[LinkedIn Callback] brand:", brand);
 
     if (error || !code) {
       console.log(
@@ -43,13 +44,24 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Check for user-configured credentials
+    const platformBrandKey = getPlatformKey("linkedin", brand);
+    const credentials = await getOAuthCredentials(userId, platformBrandKey);
+
+    console.log("[LinkedIn Callback] custom credentials:", !!credentials);
+
     const redirectUri = `${process.env.NEXTAUTH_URL}/api/oauth/linkedin/callback`;
     console.log(
       "[LinkedIn Callback] Exchanging code with redirectUri:",
       redirectUri
     );
 
-    const tokenData = await exchangeLinkedInCode(code, redirectUri);
+    const tokenData = await exchangeLinkedInCode(
+      code,
+      redirectUri,
+      credentials?.clientId,
+      credentials?.clientSecret
+    );
     console.log("[LinkedIn Callback] Token received, saving...");
 
     // Get brand-specific configuration

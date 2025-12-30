@@ -174,10 +174,13 @@ export async function postToLinkedIn(
   }
 }
 
-export async function getLinkedInAuthUrl(redirectUri: string) {
+export async function getLinkedInAuthUrl(
+  redirectUri: string,
+  clientId?: string
+) {
   const params = new URLSearchParams({
     response_type: "code",
-    client_id: process.env.LINKEDIN_CLIENT_ID!,
+    client_id: clientId || process.env.LINKEDIN_CLIENT_ID!,
     redirect_uri: redirectUri,
     scope: "openid profile email w_member_social w_organization_social",
   });
@@ -188,7 +191,12 @@ export function getDefaultRedirectUri() {
   return `${process.env.NEXTAUTH_URL}/oauth/linkedin/callback`;
 }
 
-export async function exchangeLinkedInCode(code: string, redirectUri: string) {
+export async function exchangeLinkedInCode(
+  code: string,
+  redirectUri: string,
+  clientId?: string,
+  clientSecret?: string
+) {
   const response = await axios.post(
     "https://www.linkedin.com/oauth/v2/accessToken",
     null,
@@ -197,8 +205,8 @@ export async function exchangeLinkedInCode(code: string, redirectUri: string) {
         grant_type: "authorization_code",
         code,
         redirect_uri: redirectUri,
-        client_id: process.env.LINKEDIN_CLIENT_ID,
-        client_secret: process.env.LINKEDIN_CLIENT_SECRET,
+        client_id: clientId || process.env.LINKEDIN_CLIENT_ID,
+        client_secret: clientSecret || process.env.LINKEDIN_CLIENT_SECRET,
       },
     }
   );
