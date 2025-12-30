@@ -27,7 +27,8 @@ export const BRANDS: Record<Brand, BrandConfig> = {
     id: "maplesage",
     name: "MapleSage Blog",
     domain: "blog.maplesage.com",
-    // Add LinkedIn org ID for MapleSage when you connect it
+    linkedInOrgId: "13284184",
+    // Add other social IDs as you connect them
   },
 };
 

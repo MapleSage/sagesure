@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserId } from "@/lib/auth";
 import { exchangeLinkedInCode } from "@/lib/platforms/linkedin";
 import { saveToken } from "@/lib/azure-storage";
+import { getPlatformKey, getBrandConfig, type Brand } from "@/lib/brand-detection";
 
 export async function GET(req: NextRequest) {
   try {
@@ -20,6 +21,8 @@ export async function GET(req: NextRequest) {
     const code = searchParams.get("code");
     const error = searchParams.get("error");
     const errorDescription = searchParams.get("error_description");
+    const state = searchParams.get("state");
+    const brand = (state as Brand) || "sagesure";
 
     console.log("[LinkedIn Callback] code:", code ? "present" : "missing");
     console.log("[LinkedIn Callback] error:", error);
@@ -49,22 +52,27 @@ export async function GET(req: NextRequest) {
     const tokenData = await exchangeLinkedInCode(code, redirectUri);
     console.log("[LinkedIn Callback] Token received, saving...");
 
-    // Save token with organization ID from environment
-    const organizationId = process.env.LINKEDIN_ORGANIZATION_ID;
-    console.log("[LinkedIn Callback] Organization ID:", organizationId);
+    // Get brand-specific configuration
+    const brandConfig = getBrandConfig(brand);
+    const platformKey = getPlatformKey("linkedin", brand);
 
-    await saveToken(userId, "linkedin", {
+    console.log("[LinkedIn Callback] Brand:", brand);
+    console.log("[LinkedIn Callback] Platform Key:", platformKey);
+    console.log("[LinkedIn Callback] Organization ID:", brandConfig.linkedInOrgId);
+
+    await saveToken(userId, platformKey, {
       accessToken: tokenData.access_token,
       refreshToken: tokenData.refresh_token,
       expiresAt: Date.now() + tokenData.expires_in * 1000,
-      organizationId: organizationId,
-      organizationName: "SageSure AI",
+      organizationId: brandConfig.linkedInOrgId,
+      organizationName: brandConfig.name,
+      brand: brand,
     });
 
     console.log("[LinkedIn Callback] Success! Redirecting to dashboard");
     return NextResponse.redirect(
       new URL(
-        "/dashboard?connected=linkedin",
+        `/dashboard?connected=linkedin&brand=${brand}`,
         process.env.NEXTAUTH_URL || req.url
       )
     );
