@@ -29,18 +29,7 @@ const postsTable = new TableClient(
 
 export async function GET(req: NextRequest) {
   try {
-    // Log all relevant headers for debugging
-    const authHeader = req.headers.get("authorization");
     console.log("[CRON] Starting scheduled posts check...");
-    console.log("[CRON] Auth header:", authHeader ? "Bearer ***" : "missing");
-    console.log("[CRON] User-Agent:", req.headers.get("user-agent"));
-
-    // For Vercel crons, check if CRON_SECRET matches (if provided)
-    // Allow requests without auth in production since Vercel handles auth
-    if (authHeader && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      console.log("[CRON] Invalid authorization token");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
     const startTime = new Date().toISOString();
 
     const now = new Date();
