@@ -46,14 +46,18 @@ export async function GET(req: NextRequest) {
     }
 
     // Update with organization ID
-    const updated = {
-      ...entity,
+    const updated: any = {
+      partitionKey: entity.partitionKey,
+      rowKey: entity.rowKey,
+      accessToken: entity.accessToken,
+      refreshToken: entity.refreshToken,
+      expiresAt: entity.expiresAt,
       organizationId,
       organizationName: "SageSure AI",
       updatedAt: new Date().toISOString(),
     };
 
-    await tokensTable.updateEntity(updated, "Replace");
+    await tokensTable.updateEntity(updated, "Merge");
 
     console.log("[FIX] LinkedIn token updated successfully");
 

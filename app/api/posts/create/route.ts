@@ -4,6 +4,7 @@ import { postToLinkedIn } from "@/lib/platforms/linkedin";
 import { postToFacebook, postToInstagram } from "@/lib/platforms/facebook";
 import { postToTwitter } from "@/lib/platforms/twitter";
 import { getUserId } from "@/lib/auth";
+import { detectBrand, getPlatformKey } from "@/lib/brand-detection";
 
 export async function POST(req: NextRequest) {
   try {
@@ -75,12 +76,24 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Detect brand from content
+    const brand = detectBrand(content);
+    console.log(`[POST] Detected brand: ${brand}`);
+
     for (const platform of platforms) {
       console.log(
-        `[POST] Attempting to post to ${platform} for user ${userId}`
+        `[POST] Attempting to post to ${platform} for user ${userId}, brand: ${brand}`
       );
 
-      const tokenData = await getToken(userId, platform);
+      // Try brand-specific token first, fallback to generic
+      const platformKey = getPlatformKey(platform, brand);
+      let tokenData = await getToken(userId, platformKey);
+
+      // Fallback to generic platform token if brand-specific not found
+      if (!tokenData) {
+        console.log(`[POST] No brand-specific token for ${platformKey}, trying generic ${platform}`);
+        tokenData = await getToken(userId, platform);
+      }
 
       if (!tokenData?.accessToken) {
         console.log(`[POST] No token found for ${platform}`);

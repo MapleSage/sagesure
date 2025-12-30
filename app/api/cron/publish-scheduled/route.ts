@@ -4,6 +4,7 @@ import { getToken } from "@/lib/azure-storage";
 import { postToLinkedIn } from "@/lib/platforms/linkedin";
 import { postToFacebook, postToInstagram } from "@/lib/platforms/facebook";
 import { postToTwitter } from "@/lib/platforms/twitter";
+import { detectBrand, getPlatformKey } from "@/lib/brand-detection";
 
 // Parse connection string
 function parseConnectionString(connStr: string) {
@@ -65,9 +66,21 @@ export async function GET(req: NextRequest) {
 
         const postResults = [];
 
+        // Detect brand from content
+        const brand = detectBrand(content);
+        console.log(`[CRON] Detected brand: ${brand} for post ${postId}`);
+
         // Post to each platform
         for (const platform of platforms) {
-          const tokenData = await getToken(userId, platform);
+          // Try brand-specific token first, fallback to generic
+          const platformKey = getPlatformKey(platform, brand);
+          let tokenData = await getToken(userId, platformKey);
+
+          // Fallback to generic platform token if brand-specific not found
+          if (!tokenData) {
+            console.log(`[CRON] No brand-specific token for ${platformKey}, trying generic ${platform}`);
+            tokenData = await getToken(userId, platform);
+          }
 
           if (!tokenData?.accessToken) {
             console.log(`[CRON] No token for ${platform}`);
