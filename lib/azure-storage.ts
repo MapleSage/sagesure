@@ -168,6 +168,7 @@ export async function saveToken(
     instagramAccountId?: string;
     organizationId?: string;
     organizationName?: string;
+    brand?: string;
   }
 ) {
   const entity = {
@@ -181,6 +182,7 @@ export async function saveToken(
     instagramAccountId: token.instagramAccountId || "",
     organizationId: token.organizationId || "",
     organizationName: token.organizationName || "",
+    brand: token.brand || "",
     updatedAt: new Date().toISOString(),
   };
   await tokensTable.upsertEntity(entity);
