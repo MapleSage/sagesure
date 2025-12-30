@@ -1,0 +1,138 @@
+name: Deploy to Azure App Service
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: sagesure-social-app
+  NODE_VERSION: '20.x'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build Next.js app
+      run: npm run build
+      env:
+        # Build-time environment variables
+        NEXT_PUBLIC_APP_URL: https://sagesure-social-app.azurewebsites.net
+
+    - name: Prepare deployment package
+      run: |
+        # Copy standalone output
+        mkdir -p deploy
+        cp -r .next/standalone/. deploy/
+        cp -r .next/static deploy/.next/static
+        cp -r public deploy/public
+
+        # Create startup script
+        cat > deploy/startup.sh << 'EOF'
+        #!/bin/bash
+        cd /home/site/wwwroot
+        node server.js
+        EOF
+        chmod +x deploy/startup.sh
+
+        # Create package.json for Azure
+        cat > deploy/package.json << 'EOF'
+        {
+          "name": "sagesure-social",
+          "version": "1.0.0",
+          "scripts": {
+            "start": "node server.js"
+          },
+          "engines": {
+            "node": "20.x"
+          }
+        }
+        EOF
+
+        # Create web.config for Azure
+        cat > deploy/web.config << 'EOF'
+        <?xml version="1.0" encoding="utf-8"?>
+        <configuration>
+          <system.webServer>
+            <handlers>
+              <add name="iisnode" path="server.js" verb="*" modules="iisnode"/>
+            </handlers>
+            <rewrite>
+              <rules>
+                <rule name="NodeInspector" patternSyntax="ECMAScript" stopProcessing="true">
+                  <match url="^server.js\/debug[\/]?" />
+                </rule>
+                <rule name="StaticContent">
+                  <action type="Rewrite" url="public{REQUEST_URI}"/>
+                </rule>
+                <rule name="DynamicContent">
+                  <conditions>
+                    <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="True"/>
+                  </conditions>
+                  <action type="Rewrite" url="server.js"/>
+                </rule>
+              </rules>
+            </rewrite>
+            <security>
+              <requestFiltering>
+                <hiddenSegments>
+                  <remove segment="bin"/>
+                </hiddenSegments>
+              </requestFiltering>
+            </security>
+            <httpErrors existingResponse="PassThrough" />
+            <iisnode node_env="production" />
+          </system.webServer>
+        </configuration>
+        EOF
+
+    - name: Deploy to Azure Web App
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        package: ./deploy
+
+    - name: Configure App Settings
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          az webapp config appsettings set \
+            --name ${{ env.AZURE_WEBAPP_NAME }} \
+            --resource-group sagesure-social-rg \
+            --settings \
+              WEBSITE_NODE_DEFAULT_VERSION="20-lts" \
+              NODE_ENV="production" \
+              AZURE_STORAGE_CONNECTION_STRING="${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
+              AZURE_OPENAI_API_KEY="${{ secrets.AZURE_OPENAI_API_KEY }}" \
+              AZURE_OPENAI_ENDPOINT="${{ secrets.AZURE_OPENAI_ENDPOINT }}" \
+              AZURE_OPENAI_DEPLOYMENT_NAME="${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}" \
+              AZURE_OPENAI_API_VERSION="${{ secrets.AZURE_OPENAI_API_VERSION }}" \
+              LINKEDIN_CLIENT_ID="${{ secrets.LINKEDIN_CLIENT_ID }}" \
+              LINKEDIN_CLIENT_SECRET="${{ secrets.LINKEDIN_CLIENT_SECRET }}" \
+              FACEBOOK_APP_ID="${{ secrets.FACEBOOK_APP_ID }}" \
+              FACEBOOK_APP_SECRET="${{ secrets.FACEBOOK_APP_SECRET }}" \
+              TWITTER_CLIENT_ID="${{ secrets.TWITTER_CLIENT_ID }}" \
+              TWITTER_CLIENT_SECRET="${{ secrets.TWITTER_CLIENT_SECRET }}" \
+              HUBSPOT_API_KEY="${{ secrets.HUBSPOT_API_KEY }}" \
+              CRON_SECRET="${{ secrets.CRON_SECRET }}"
+
+    - name: Deployment Summary
+      run: |
+        echo "✅ Deployment complete!"
+        echo "🌐 App URL: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"
+        echo "📊 Check logs: https://portal.azure.com"
