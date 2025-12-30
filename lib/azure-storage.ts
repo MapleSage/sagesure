@@ -746,3 +746,68 @@ export async function getUserFolders(userId: string) {
     count,
   }));
 }
+
+// OAuth credentials operations
+export async function saveOAuthCredentials(
+  userId: string,
+  platformBrandKey: string, // e.g., "linkedin-sagesure", "facebook-maplesage"
+  credentials: {
+    clientId: string;
+    clientSecret: string;
+    redirectUri?: string;
+  }
+) {
+  const entity = {
+    partitionKey: userId,
+    rowKey: platformBrandKey,
+    clientId: credentials.clientId,
+    clientSecret: credentials.clientSecret,
+    redirectUri: credentials.redirectUri || "",
+    updatedAt: new Date().toISOString(),
+  };
+  await settingsTable.upsertEntity(entity);
+  return credentials;
+}
+
+export async function getOAuthCredentials(userId: string, platformBrandKey: string) {
+  try {
+    const entity = await settingsTable.getEntity(userId, platformBrandKey);
+    return {
+      clientId: entity.clientId as string,
+      clientSecret: entity.clientSecret as string,
+      redirectUri: (entity.redirectUri as string) || "",
+    };
+  } catch (error: any) {
+    if (error.statusCode === 404) return null;
+    throw error;
+  }
+}
+
+export async function getUserOAuthCredentials(userId: string) {
+  const credentials = [];
+  const entities = settingsTable.listEntities({
+    queryOptions: { filter: `PartitionKey eq '${userId}'` },
+  });
+
+  for await (const entity of entities) {
+    // Skip the "settings" rowKey which contains user settings
+    if (entity.rowKey === "settings") continue;
+
+    credentials.push({
+      platformBrandKey: entity.rowKey as string,
+      clientId: entity.clientId as string,
+      clientSecret: entity.clientSecret as string,
+      redirectUri: (entity.redirectUri as string) || "",
+    });
+  }
+
+  return credentials;
+}
+
+export async function deleteOAuthCredentials(userId: string, platformBrandKey: string) {
+  try {
+    await settingsTable.deleteEntity(userId, platformBrandKey);
+  } catch (error: any) {
+    if (error.statusCode !== 404) throw error;
+  }
+}

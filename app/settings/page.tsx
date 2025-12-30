@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FaArrowLeft, FaFacebook, FaLinkedin, FaTwitter, FaInstagram, FaSpinner } from "react-icons/fa";
+import { FaArrowLeft, FaFacebook, FaLinkedin, FaTwitter, FaInstagram, FaSpinner, FaCog, FaKey, FaTimes, FaSave } from "react-icons/fa";
 import type { Brand } from "@/lib/brand-detection";
 
 interface ConnectedAccount {
@@ -17,6 +17,13 @@ interface ConnectedAccount {
   expiresAt?: number;
 }
 
+interface OAuthCredentials {
+  platformBrandKey: string;
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+}
+
 export default function SettingsPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -24,6 +31,16 @@ export default function SettingsPage() {
   const [selectedBrand, setSelectedBrand] = useState<Brand>("sagesure");
   const [connectedAccounts, setConnectedAccounts] = useState<ConnectedAccount[]>([]);
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
+
+  // OAuth Credentials state
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [editingPlatform, setEditingPlatform] = useState<string | null>(null);
+  const [credentialsForm, setCredentialsForm] = useState({
+    clientId: "",
+    clientSecret: "",
+    redirectUri: "",
+  });
+  const [savingCredentials, setSavingCredentials] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -80,6 +97,52 @@ export default function SettingsPage() {
       alert("Failed to disconnect account");
     } finally {
       setDisconnecting(null);
+    }
+  };
+
+  const handleConfigureOAuth = (platform: string) => {
+    const platformBrandKey = `${platform}-${selectedBrand}`;
+    setEditingPlatform(platformBrandKey);
+    setCredentialsForm({
+      clientId: "",
+      clientSecret: "",
+      redirectUri: `${window.location.origin}/api/oauth/${platform}/callback`,
+    });
+    setShowCredentialsModal(true);
+  };
+
+  const handleSaveCredentials = async () => {
+    if (!editingPlatform) return;
+
+    if (!credentialsForm.clientId || !credentialsForm.clientSecret) {
+      alert("Client ID and Client Secret are required");
+      return;
+    }
+
+    setSavingCredentials(true);
+    try {
+      const response = await fetch("/api/oauth/credentials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          platformBrandKey: editingPlatform,
+          ...credentialsForm,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert("OAuth credentials saved successfully!");
+        setShowCredentialsModal(false);
+        setEditingPlatform(null);
+      } else {
+        alert(data.error || "Failed to save credentials");
+      }
+    } catch (error) {
+      console.error("Save credentials error:", error);
+      alert("Failed to save credentials");
+    } finally {
+      setSavingCredentials(false);
     }
   };
 
@@ -226,7 +289,7 @@ export default function SettingsPage() {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
                       {isConnected && (
                         <div className="text-right">
                           <div
@@ -237,6 +300,15 @@ export default function SettingsPage() {
                           </div>
                         </div>
                       )}
+
+                      {/* OAuth Config Button */}
+                      <button
+                        onClick={() => handleConfigureOAuth(platform)}
+                        className="px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 flex items-center gap-2"
+                        title="Configure OAuth credentials">
+                        <FaKey className="text-xs" />
+                      </button>
+
                       {isConnected ? (
                         <button
                           onClick={() => handleDisconnect(account.platformKey)}
@@ -266,6 +338,102 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* OAuth Credentials Modal */}
+      {showCredentialsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4">
+            <div className="flex justify-between items-center p-6 border-b">
+              <h3 className="text-xl font-semibold">OAuth Credentials</h3>
+              <button
+                onClick={() => setShowCredentialsModal(false)}
+                className="text-gray-400 hover:text-gray-600">
+                <FaTimes />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Platform & Brand
+                </label>
+                <input
+                  type="text"
+                  value={editingPlatform || ""}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  App ID / Client ID
+                </label>
+                <input
+                  type="text"
+                  value={credentialsForm.clientId}
+                  onChange={(e) => setCredentialsForm({ ...credentialsForm, clientId: e.target.value })}
+                  placeholder="Enter your app/client ID"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  App Secret / Client Secret
+                </label>
+                <input
+                  type="password"
+                  value={credentialsForm.clientSecret}
+                  onChange={(e) => setCredentialsForm({ ...credentialsForm, clientSecret: e.target.value })}
+                  placeholder="Enter your app/client secret"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  OAuth Redirect URI
+                </label>
+                <input
+                  type="text"
+                  value={credentialsForm.redirectUri}
+                  onChange={(e) => setCredentialsForm({ ...credentialsForm, redirectUri: e.target.value })}
+                  placeholder="https://social.sagesure.io/api/oauth/platform/callback"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Add this URL to your OAuth app's allowed redirect URIs
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 p-6 border-t">
+              <button
+                onClick={() => setShowCredentialsModal(false)}
+                className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveCredentials}
+                disabled={savingCredentials}
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2">
+                {savingCredentials ? (
+                  <>
+                    <FaSpinner className="animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <FaSave />
+                    Save Credentials
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
