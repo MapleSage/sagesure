@@ -2,35 +2,28 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FaArrowLeft, FaCog, FaFacebook, FaLinkedin, FaTwitter, FaInstagram, FaYoutube } from "react-icons/fa";
+import { FaArrowLeft, FaFacebook, FaLinkedin, FaTwitter, FaInstagram, FaYoutube, FaSpinner } from "react-icons/fa";
+import type { Brand } from "@/lib/brand-detection";
+
+interface ConnectedAccount {
+  platform: string;
+  brand: Brand;
+  platformKey: string;
+  connected: boolean;
+  accountName?: string;
+  accountHandle?: string;
+  organizationId?: string;
+  pageId?: string;
+  expiresAt?: number;
+}
 
 export default function SettingsPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"accounts" | "publishing" | "email">("accounts");
-  const [connectedAccounts, setConnectedAccounts] = useState<any[]>([]);
-
-  // Publishing schedule settings
-  const [publishingSchedule, setPublishingSchedule] = useState({
-    sunday: ["11:00 AM", "2:00 PM", "4:45 PM"],
-    monday: ["11:00 AM", "2:00 PM", "4:45 PM"],
-    tuesday: ["11:00 AM", "2:00 PM", "4:45 PM"],
-    wednesday: ["11:00 AM", "2:00 PM", "4:45 PM"],
-    thursday: ["11:00 AM", "2:00 PM", "4:45 PM"],
-    friday: ["11:00 AM", "2:00 PM", "4:45 PM"],
-    saturday: ["11:00 AM", "2:00 PM", "4:45 PM"],
-  });
-
-  const [publishNowByDefault, setPublishNowByDefault] = useState(false);
-  const [publishLikeHuman, setPublishLikeHuman] = useState(true);
-  const [nextPostDelay, setNextPostDelay] = useState("next-available");
-
-  // Email notification settings
-  const [emailNotifications, setEmailNotifications] = useState({
-    activitySummary: "daily",
-    socialReports: true,
-  });
+  const [connectedAccounts, setConnectedAccounts] = useState<ConnectedAccount[]>([]);
+  const [disconnecting, setDisconnecting] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -59,16 +52,71 @@ export default function SettingsPage() {
     }
   };
 
+  const handleConnect = (platform: string, brand: Brand) => {
+    // Redirect to OAuth with brand parameter
+    window.location.href = `/api/oauth/${platform}/authorize?brand=${brand}`;
+  };
+
+  const handleDisconnect = async (platformKey: string) => {
+    if (!confirm(`Are you sure you want to disconnect this account?`)) {
+      return;
+    }
+
+    setDisconnecting(platformKey);
+    try {
+      const response = await fetch("/api/platforms/disconnect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ platformKey }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        await loadConnectedAccounts();
+      } else {
+        alert(data.error || "Failed to disconnect");
+      }
+    } catch (error) {
+      console.error("Disconnect error:", error);
+      alert("Failed to disconnect account");
+    } finally {
+      setDisconnecting(null);
+    }
+  };
+
   const handleLogout = async () => {
     const res = await fetch("/api/auth/logout", { method: "POST" });
     const data = await res.json();
     if (data.logoutUrl) window.location.href = data.logoutUrl;
   };
 
+  const getAccountForBrand = (platform: string, brand: Brand): ConnectedAccount | undefined => {
+    return connectedAccounts.find(
+      (acc) => acc.platform === platform && acc.brand === brand
+    );
+  };
+
+  const getPlatformIcon = (platform: string) => {
+    switch (platform) {
+      case "facebook":
+        return <FaFacebook className="text-blue-600" />;
+      case "linkedin":
+        return <FaLinkedin className="text-blue-700" />;
+      case "twitter":
+        return <FaTwitter className="text-blue-400" />;
+      case "instagram":
+        return <FaInstagram className="text-pink-600" />;
+      case "youtube":
+        return <FaYoutube className="text-red-600" />;
+      default:
+        return null;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
+        <FaSpinner className="animate-spin text-4xl text-blue-600" />
       </div>
     );
   }
@@ -101,7 +149,7 @@ export default function SettingsPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tabs */}
-        <div className="bg-white rounded-lg shadow mb-6">
+        <div className="bg-white rounded-lg shadow">
           <div className="border-b border-gray-200">
             <nav className="flex -mb-px">
               <button
@@ -113,24 +161,6 @@ export default function SettingsPage() {
                 }`}>
                 Accounts
               </button>
-              <button
-                onClick={() => setActiveTab("publishing")}
-                className={`px-6 py-4 text-sm font-medium border-b-2 ${
-                  activeTab === "publishing"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}>
-                Publishing
-              </button>
-              <button
-                onClick={() => setActiveTab("email")}
-                className={`px-6 py-4 text-sm font-medium border-b-2 ${
-                  activeTab === "email"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}>
-                Email Notifications
-              </button>
             </nav>
           </div>
 
@@ -138,66 +168,34 @@ export default function SettingsPage() {
             {/* Accounts Tab */}
             {activeTab === "accounts" && (
               <div>
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h2 className="text-xl font-semibold">Connected Accounts</h2>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Manage your social media accounts across different brands
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => router.push("/dashboard")}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                    Connect accounts
-                  </button>
+                <div className="mb-6">
+                  <h2 className="text-xl font-semibold">Connected Accounts</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Manage your social media accounts across different brands
+                  </p>
                 </div>
 
                 {/* Brand: MapleSage */}
                 <div className="mb-8">
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <span className="text-2xl">🍁</span> MapleSage (AI)
+                    <span className="text-2xl">🍁</span> MapleSage
                   </h3>
                   <div className="space-y-3">
-                    <AccountRow
-                      platform="Facebook"
-                      icon={<FaFacebook className="text-blue-600" />}
-                      account="MapleSage.com"
-                      handle="@maplesageinc"
-                      status="active"
-                      connectedBy="Parvind Dutta"
-                    />
-                    <AccountRow
-                      platform="Instagram"
-                      icon={<FaInstagram className="text-pink-600" />}
-                      account="Team MapleSage"
-                      handle="@maplesageinc"
-                      status="active"
-                      connectedBy="Parvind Dutta"
-                    />
-                    <AccountRow
-                      platform="Twitter/X"
-                      icon={<FaTwitter className="text-blue-400" />}
-                      account="MapleSage Inc"
-                      handle="@MaplesageInc"
-                      status="active"
-                      connectedBy="Parvind Dutta"
-                    />
-                    <AccountRow
-                      platform="LinkedIn"
-                      icon={<FaLinkedin className="text-blue-700" />}
-                      account="MapleSage"
-                      handle="@maplesage"
-                      status="active"
-                      connectedBy="Parvind Dutta"
-                    />
-                    <AccountRow
-                      platform="YouTube"
-                      icon={<FaYoutube className="text-red-600" />}
-                      account="MapleSage"
-                      handle="@maplesageinc"
-                      status="expired"
-                      connectedBy="Parvind Dutta"
-                    />
+                    {["linkedin", "facebook", "instagram", "twitter"].map((platform) => {
+                      const account = getAccountForBrand(platform, "maplesage");
+                      return (
+                        <BrandAccountRow
+                          key={platform}
+                          platform={platform}
+                          brand="maplesage"
+                          icon={getPlatformIcon(platform)}
+                          account={account}
+                          onConnect={() => handleConnect(platform, "maplesage")}
+                          onDisconnect={() => handleDisconnect(account!.platformKey)}
+                          disconnecting={disconnecting === account?.platformKey}
+                        />
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -207,198 +205,21 @@ export default function SettingsPage() {
                     <img src="/logo.png" className="w-6 h-6" alt="SageSure" /> SageSure
                   </h3>
                   <div className="space-y-3">
-                    <AccountRow
-                      platform="Facebook"
-                      icon={<FaFacebook className="text-blue-600" />}
-                      account="SageSure"
-                      handle="@sagesure-ai"
-                      status="active"
-                      connectedBy="Parvind Dutta"
-                    />
-                    <AccountRow
-                      platform="Twitter/X"
-                      icon={<FaTwitter className="text-blue-400" />}
-                      account="SageSure AI"
-                      handle="@SageSureAI"
-                      status="active"
-                      connectedBy="Parvind Dutta"
-                    />
-                    <AccountRow
-                      platform="LinkedIn"
-                      icon={<FaLinkedin className="text-blue-700" />}
-                      account="SageSure AI"
-                      handle="@sagesure-ai"
-                      status="active"
-                      connectedBy="Parvind Dutta"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Publishing Tab */}
-            {activeTab === "publishing" && (
-              <div>
-                <h2 className="text-xl font-semibold mb-6">Publishing Schedule</h2>
-
-                {/* Schedule Grid */}
-                <div className="mb-8">
-                  <h3 className="text-base font-semibold mb-4">Schedule</h3>
-                  <div className="grid grid-cols-7 gap-4">
-                    {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((day) => (
-                      <div key={day} className="text-center">
-                        <div className="font-medium text-sm mb-2">{day}</div>
-                        <div className="space-y-1 text-xs text-blue-600">
-                          <div>11:00 AM</div>
-                          <div>2:00 PM</div>
-                          <div>4:45 PM</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Publishing Options */}
-                <div className="space-y-6">
-                  <div>
-                    <label className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={publishNowByDefault}
-                        onChange={(e) => setPublishNowByDefault(e.target.checked)}
-                        className="w-5 h-5 text-blue-600"
-                      />
-                      <div>
-                        <div className="font-medium">Publish now by default</div>
-                        <div className="text-sm text-gray-600">
-                          Save time by preselecting 'publish now' for all your posts.
-                        </div>
-                      </div>
-                    </label>
-                  </div>
-
-                  <div>
-                    <label className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={publishLikeHuman}
-                        onChange={(e) => setPublishLikeHuman(e.target.checked)}
-                        className="w-5 h-5 text-blue-600"
-                      />
-                      <div>
-                        <div className="font-medium">Publish like a human</div>
-                        <div className="text-sm text-gray-600">
-                          Publish posts at various times within 10 minutes of your chosen time, to make it seem natural and spontaneous.
-                        </div>
-                      </div>
-                    </label>
-                  </div>
-
-                  <div>
-                    <label className="block mb-2">
-                      <div className="font-medium mb-1">Next post delay</div>
-                      <div className="text-sm text-gray-600 mb-3">
-                        Choose how much time you'd like between each post if you're scheduling multiple post to the same account.
-                      </div>
-                    </label>
-                    <select
-                      value={nextPostDelay}
-                      onChange={(e) => setNextPostDelay(e.target.value)}
-                      className="w-64 px-4 py-2 border border-gray-300 rounded-lg">
-                      <option value="next-available">Next available time slot</option>
-                      <option value="15min">15 minutes</option>
-                      <option value="30min">30 minutes</option>
-                      <option value="1hour">1 hour</option>
-                      <option value="2hours">2 hours</option>
-                    </select>
-                  </div>
-
-                  <div className="pt-4">
-                    <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                      Save Settings
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Email Notifications Tab */}
-            {activeTab === "email" && (
-              <div>
-                <h2 className="text-xl font-semibold mb-6">Email notifications</h2>
-
-                <div className="space-y-8">
-                  {/* Social Activity Summary */}
-                  <div>
-                    <h3 className="font-semibold mb-2">Social activity summary</h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Get a round up of new interactions, conversations, and X followers.
-                    </p>
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          name="activity"
-                          checked={emailNotifications.activitySummary === "none"}
-                          onChange={() => setEmailNotifications({...emailNotifications, activitySummary: "none"})}
-                          className="w-4 h-4"
+                    {["linkedin", "facebook", "instagram", "twitter"].map((platform) => {
+                      const account = getAccountForBrand(platform, "sagesure");
+                      return (
+                        <BrandAccountRow
+                          key={platform}
+                          platform={platform}
+                          brand="sagesure"
+                          icon={getPlatformIcon(platform)}
+                          account={account}
+                          onConnect={() => handleConnect(platform, "sagesure")}
+                          onDisconnect={() => handleDisconnect(account!.platformKey)}
+                          disconnecting={disconnecting === account?.platformKey}
                         />
-                        <span>No email summary</span>
-                      </label>
-                      <label className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          name="activity"
-                          checked={emailNotifications.activitySummary === "daily"}
-                          onChange={() => setEmailNotifications({...emailNotifications, activitySummary: "daily"})}
-                          className="w-4 h-4"
-                        />
-                        <span>Daily (8:00 AM)</span>
-                      </label>
-                      <label className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          name="activity"
-                          checked={emailNotifications.activitySummary === "twice-daily"}
-                          onChange={() => setEmailNotifications({...emailNotifications, activitySummary: "twice-daily"})}
-                          className="w-4 h-4"
-                        />
-                        <span>Twice daily (8:00 AM & 4:00 PM)</span>
-                      </label>
-                      <label className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          name="activity"
-                          checked={emailNotifications.activitySummary === "weekly"}
-                          onChange={() => setEmailNotifications({...emailNotifications, activitySummary: "weekly"})}
-                          className="w-4 h-4"
-                        />
-                        <span>Weekly (Monday 8:00 AM)</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Social Reports */}
-                  <div>
-                    <h3 className="font-semibold mb-2">Social Reports</h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Get a monthly email with all your social reports.
-                    </p>
-                    <label className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={emailNotifications.socialReports}
-                        onChange={(e) => setEmailNotifications({...emailNotifications, socialReports: e.target.checked})}
-                        className="w-5 h-5 text-blue-600"
-                      />
-                      <span>Yes, send me a monthly email with my social reports</span>
-                    </label>
-                  </div>
-
-                  <div className="pt-4">
-                    <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                      Save Settings
-                    </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -410,28 +231,76 @@ export default function SettingsPage() {
   );
 }
 
-// Account Row Component
-function AccountRow({ platform, icon, account, handle, status, connectedBy }: any) {
+// Brand Account Row Component
+function BrandAccountRow({
+  platform,
+  brand,
+  icon,
+  account,
+  onConnect,
+  onDisconnect,
+  disconnecting,
+}: {
+  platform: string;
+  brand: Brand;
+  icon: React.ReactNode;
+  account?: ConnectedAccount;
+  onConnect: () => void;
+  onDisconnect: () => void;
+  disconnecting: boolean;
+}) {
+  const isConnected = account?.connected;
+  const isExpired = account?.expiresAt && account.expiresAt < Date.now();
+
   return (
     <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
       <div className="flex items-center gap-4">
         <div className="text-2xl">{icon}</div>
         <div>
-          <div className="font-medium">{platform}</div>
-          <div className="text-sm text-gray-600">{account}</div>
-          <div className="text-xs text-gray-500">{handle}</div>
+          <div className="font-medium capitalize">{platform}</div>
+          {isConnected ? (
+            <>
+              <div className="text-sm text-gray-600">
+                {account.accountName || "Connected"}
+              </div>
+              {account.accountHandle && (
+                <div className="text-xs text-gray-500">{account.accountHandle}</div>
+              )}
+            </>
+          ) : (
+            <div className="text-sm text-gray-500">Not connected</div>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-4">
-        <div className="text-right">
-          <div className={`text-sm ${status === "active" ? "text-green-600" : "text-red-600"}`}>
-            {status === "active" ? "● Active" : "● Expired"}
+        {isConnected && (
+          <div className="text-right">
+            <div
+              className={`text-sm ${
+                isExpired ? "text-red-600" : "text-green-600"
+              }`}>
+              {isExpired ? "● Expired" : "● Active"}
+            </div>
           </div>
-          <div className="text-xs text-gray-500">Connected by {connectedBy}</div>
-        </div>
-        <button className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
-          Manage blogs (1)
-        </button>
+        )}
+        {isConnected ? (
+          <button
+            onClick={onDisconnect}
+            disabled={disconnecting}
+            className="px-4 py-2 text-sm border border-red-300 text-red-600 rounded-lg hover:bg-red-50 disabled:opacity-50">
+            {disconnecting ? (
+              <FaSpinner className="animate-spin" />
+            ) : (
+              "Disconnect"
+            )}
+          </button>
+        ) : (
+          <button
+            onClick={onConnect}
+            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            Connect
+          </button>
+        )}
       </div>
     </div>
   );

@@ -242,6 +242,12 @@ export async function getUserTokens(userId: string) {
       accessToken: entity.accessToken as string,
       refreshToken: entity.refreshToken as string,
       expiresAt: entity.expiresAt as number,
+      pageId: entity.pageId as string,
+      pageName: entity.pageName as string,
+      organizationId: entity.organizationId as string,
+      organizationName: entity.organizationName as string,
+      instagramAccountId: entity.instagramAccountId as string,
+      brand: entity.brand as string,
     });
   }
 
