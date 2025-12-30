@@ -179,7 +179,7 @@ export async function getLinkedInAuthUrl(redirectUri: string) {
     response_type: "code",
     client_id: process.env.LINKEDIN_CLIENT_ID!,
     redirect_uri: redirectUri,
-    scope: "openid profile email w_member_social",
+    scope: "openid profile email w_member_social w_organization_social",
   });
   return `https://www.linkedin.com/oauth/v2/authorization?${params}`;
 }
