@@ -757,6 +757,15 @@ export async function saveOAuthCredentials(
     redirectUri?: string;
   }
 ) {
+  // Ensure settings table exists
+  try {
+    await settingsTable.createTable();
+  } catch (error: any) {
+    if (error.statusCode !== 409) {
+      console.error("[saveOAuthCredentials] Error creating table:", error);
+    }
+  }
+
   const entity = {
     partitionKey: userId,
     rowKey: platformBrandKey,
