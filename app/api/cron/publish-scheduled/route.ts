@@ -29,7 +29,7 @@ const postsTable = new TableClient(
 
 export async function GET(req: NextRequest) {
   try {
-    console.log("[CRON] Starting scheduled posts check...");
+    console.log("[CRON] Starting scheduled posts check (no auth)...");
     const startTime = new Date().toISOString();
 
     const now = new Date();
